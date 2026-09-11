@@ -1,5 +1,5 @@
 /* NiHao Lab · Service Worker: la app funciona sin internet tras la 1ª visita */
-const CACHE = 'nihao-v5';
+const CACHE = 'nihao-v6';
 const ASSETS = [
   './',
   'index.html',
