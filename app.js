@@ -167,6 +167,9 @@ function actualizarMenu() {
   document.getElementById('record-pinyin').textContent = dibEstrellas(estrellas('pinyin')) + ' ' + S.games.pinyin.best + ' pts';
   document.getElementById('record-tonos').textContent = dibEstrellas(estrellas('tonos')) + ' ' + S.games.tonos.best + ' pts';
   document.getElementById('record-pronuncia').textContent = dibEstrellas(estrellas('pronuncia')) + ' ' + S.games.pronuncia.best + ' pts';
+  document.getElementById('record-escribe').textContent = dibEstrellas(estrellas('escribe')) + ' ' + S.games.escribe.best + ' pts';
+  const dd = document.getElementById('daily-due');
+  if (dd) dd.textContent = repasoDebido() + ' palabras te esperan hoy';
   const deb = repasoDebido();
   const chip = document.getElementById('srs-due');
   chip.textContent = deb > 0 ? `🎯 ${deb} palabra${deb > 1 ? 's' : ''} para repasar hoy` : '✅ Repaso al día';
@@ -476,8 +479,8 @@ function setTonoModo(m) {
     b.classList.toggle('toggle-on', b.dataset.m === m));
   if (m === 'pares') nuevoPar(); else nuevoTono();
 }
-function pintarTonoOpts(items, responder) {
-  const box = document.getElementById('tono-opts');
+function pintarTonoOpts(items, responder, targetId) {
+  const box = document.getElementById(targetId || 'tono-opts');
   box.innerHTML = '';
   items.forEach(o => {
     const b = document.createElement('button');
@@ -733,8 +736,118 @@ function desbloquearVoz() {
   document.removeEventListener('pointerdown', desbloquearVoz);
 }
 document.addEventListener('pointerdown', desbloquearVoz);
+// ================= ESCRIBE (trazado con score por cobertura) =================
+let esActual = null, esPts = [], esInk = [], esTrazando = false, esPtsSesion = 0;
+const ES_SIZE = 300, ES_RADIO = 14, ES_MIN = 60;
+function nuevaEscribe() {
+  const unos = pool().filter(w => [...w.hanzi].length === 1);
+  esActual = rnd(unos.length ? unos : pool());
+  esPts = [];
+  document.getElementById('es-hanzi').textContent = esActual.hanzi;
+  document.getElementById('es-info').textContent = esActual.pinyin + ' · ' + esActual.es + ' — repásalo con el dedo o el mouse';
+  document.getElementById('es-score').textContent = '';
+  prepararLienzo();
+}
+function prepararLienzo() {
+  const cv = document.getElementById('es-canvas');
+  const dpr = window.devicePixelRatio || 1;
+  cv.width = ES_SIZE * dpr; cv.height = ES_SIZE * dpr;
+  cv.style.width = ES_SIZE + 'px'; cv.style.height = ES_SIZE + 'px';
+  const g = cv.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, ES_SIZE, ES_SIZE);
+  g.font = '500 ' + (ES_SIZE * 0.78) + 'px "Noto Sans SC", sans-serif';
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillStyle = 'rgba(128,138,155,.28)';
+  g.fillText(esActual.hanzi, ES_SIZE / 2, ES_SIZE / 2 + ES_SIZE * 0.03);
+  // muestras de tinta en canvas aparte
+  const off = document.createElement('canvas');
+  off.width = ES_SIZE; off.height = ES_SIZE;
+  const o = off.getContext('2d');
+  o.font = g.font; o.textAlign = 'center'; o.textBaseline = 'middle';
+  o.fillStyle = '#000';
+  o.fillText(esActual.hanzi, ES_SIZE / 2, ES_SIZE / 2 + ES_SIZE * 0.03);
+  const d = o.getImageData(0, 0, ES_SIZE, ES_SIZE).data;
+  esInk = [];
+  for (let y = 0; y < ES_SIZE; y += 4) for (let x = 0; x < ES_SIZE; x += 4) {
+    if (d[(y * ES_SIZE + x) * 4 + 3] > 120) esInk.push([x, y]);
+  }
+  redrawTrazos();
+}
+function redrawTrazos() {
+  const cv = document.getElementById('es-canvas');
+  const g = cv.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // redibuja guía + trazos
+  g.clearRect(0, 0, ES_SIZE, ES_SIZE);
+  g.font = '500 ' + ES_SIZE * 0.78 + 'px "Noto Sans SC", sans-serif';
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillStyle = 'rgba(128,138,155,.28)';
+  g.fillText(esActual.hanzi, ES_SIZE / 2, ES_SIZE / 2 + ES_SIZE * 0.03);
+  g.strokeStyle = getComputedStyle(document.documentElement).getAttribute('data-theme') === 'dark' ? '#f2f4f7' : '#1c1e21';
+  g.lineWidth = ES_SIZE * 0.055; g.lineCap = 'round'; g.lineJoin = 'round';
+  esPts.forEach(st => {
+    if (st.length < 1) return;
+    g.beginPath();
+    g.moveTo(st[0][0], st[0][1]);
+    st.forEach(p => g.lineTo(p[0], p[1]));
+    g.stroke();
+  });
+}
+function esPos(e) {
+  const r = e.target.getBoundingClientRect();
+  return [e.clientX - r.left, e.clientY - r.top];
+}
+function esDown(e) {
+  esTrazando = true;
+  esPts.push([esPos(e)]);
+  e.target.setPointerCapture(e.pointerId);
+  redrawTrazos();
+}
+function esMove(e) {
+  if (!esTrazando) return;
+  esPts[esPts.length - 1].push(esPos(e));
+  redrawTrazos();
+}
+function esUp() { esTrazando = false; }
+function limpiarLienzo() { esPts = []; redrawTrazos(); document.getElementById('es-score').textContent = ''; }
+function comprobarEscribe() {
+  if (!esPts.length || !esInk.length) { document.getElementById('es-score').textContent = '✍️ Dibújalo primero sobre la guía'; return; }
+  const R2 = ES_RADIO * ES_RADIO;
+  let hit = 0;
+  for (const [x, y] of esInk) {
+    for (const st of esPts) {
+      let ok = false;
+      for (const [px, py] of st) { const dx = x - px, dy = y - py; if (dx * dx + dy * dy < R2) { ok = true; break; } }
+      if (ok) { hit++; break; }
+    }
+  }
+  const cov = Math.round(hit / esInk.length * 100);
+  const pass = cov >= ES_MIN;
+  trackGame('escribe', pass);
+  trackWord(esActual.hanzi, pass);
+  document.getElementById('es-score').textContent = pass
+    ? `✅ ${cov}% de cobertura · ¡ese ${esActual.hanzi} ya es tuyo! +15 XP`
+    : `❌ ${cov}% — te faltó tinta (mínimo ${ES_MIN}%). Limpia y otra vez`;
+  if (pass) {
+    esPtsSesion += 15;
+    addXP(15);
+    if (S.games.escribe.ok >= 3) maybeAchv('trazo');
+    setTimeout(nuevaEscribe, 1600);
+  }
+  if (esPtsSesion > S.games.escribe.best) { S.games.escribe.best = esPtsSesion; save(); }
+  actualizarMenu();
+}
+
 // ================= CAMINO DUOLINGO: unidades + lecciones + corazones =================
 let lec = null; // {unit, level, queue:[{type,word}], idx, hearts, ok}
+const CICLO_TIPOS = ['quiz', 'escucha', 'pinyin', 'tono'];
+function tipoPara(level, i) {
+  if (level === 1) return 'quiz';
+  if (level === 2) return (i % 3 === 2) ? 'escucha' : 'quiz';
+  return CICLO_TIPOS[i % 4]; // nivel 3 y sesión diaria: mezcla completa
+}
 function unidadDesbloqueada(i) {
   if (i === 0) return true;
   const prev = UNIDADES[i - 1].id;
@@ -748,7 +861,21 @@ function empezarLeccion(uid, level) {
   while (elegidas.length < total) elegidas.push(rnd(words));
   lec = {
     unit: uid, level,
-    queue: elegidas.map((w, i) => ({ type: (i % 3 === 2) ? 'escucha' : 'quiz', word: w })),
+    queue: elegidas.map((w, i) => ({ type: tipoPara(level, i), word: w })),
+    idx: 0, hearts: 3, ok: 0
+  };
+  showView('leccion');
+  pintarLeccion();
+}
+// 🎯 Sesión diaria: 10 palabras debidas (o SRS) con todos los tipos
+function empezarSesion() {
+  const hoy = Date.now();
+  let deb = pool().filter(w => { const e = cajaEntry(w.hanzi); return e && e.due <= hoy; });
+  if (deb.length < 6) deb = srsPick(pool(), 10);
+  deb = deb.slice(0, 10);
+  lec = {
+    unit: 'diaria', level: 0,
+    queue: deb.map((w, i) => ({ type: CICLO_TIPOS[i % 4], word: w })),
     idx: 0, hearts: 3, ok: 0
   };
   showView('leccion');
@@ -762,21 +889,26 @@ function pintarLeccion() {
   const item = lec.queue[lec.idx];
   const w = item.word;
   const u = UNIDADES.find(x => x.id === lec.unit);
-  document.getElementById('lec-title').textContent = `${u.emoji} ${u.nombre} · Nivel ${lec.level}`;
+  document.getElementById('lec-title').textContent = lec.unit === 'diaria'
+    ? '🎯 Sesión diaria · repaso inteligente'
+    : `${u.emoji} ${u.nombre} · Nivel ${lec.level}`;
   document.getElementById('lec-prog-fill').style.width = Math.round(lec.idx / lec.queue.length * 100) + '%';
   pintarHearts();
   document.getElementById('lec-feedback').textContent = '';
+  const wrap = document.getElementById('lec-input-wrap');
+  wrap.classList.add('hidden');
+  document.getElementById('lec-play').classList.add('hidden');
   const box = document.getElementById('lec-opts');
   box.innerHTML = '';
-  const lista = unitWords(lec.unit);
+  let lista = unitWords(lec.unit);
+  if (lista.length < 4) lista = pool();
+  const dificil = lec.level === 3 || lec.unit === 'diaria';
   if (item.type === 'quiz') {
-    // Nivel 1: solo ZH→ES (más fácil). Nivel 2-3: ambas direcciones.
     const dirEs = lec.level >= 2 && Math.random() < 0.5;
-    document.getElementById('lec-play').classList.add('hidden');
     document.getElementById('lec-q').innerHTML = dirEs
       ? `¿Cómo se dice <b>"${w.es}"</b> en chino?<br><small>sin pinyin: recuerda el hànzì</small>`
       : `¿Qué significa <b>${w.hanzi}</b>? <button onclick="speak('${w.hanzi}')">🔊</button><br><small>${w.pinyin}</small>`;
-    const opts = [...distractores(w, lista, 3, lec.level === 3), w].sort(() => Math.random() - 0.5);
+    const opts = [...distractores(w, lista, 3, dificil), w].sort(() => Math.random() - 0.5);
     opts.forEach(o => {
       const b = document.createElement('button');
       b.className = 'quiz-opt';
@@ -785,12 +917,12 @@ function pintarLeccion() {
       box.appendChild(b);
     });
     if (!dirEs) speak(w.hanzi);
-  } else {
+  } else if (item.type === 'escucha') {
     document.getElementById('lec-q').innerHTML = `🎧 Escucha y elige el significado`;
     const play = document.getElementById('lec-play');
     play.classList.remove('hidden');
     play.querySelector('button').onclick = () => speak(w.hanzi);
-    const opts = [...distractores(w, lista, 3, lec.level === 3), w].sort(() => Math.random() - 0.5);
+    const opts = [...distractores(w, lista, 3, dificil), w].sort(() => Math.random() - 0.5);
     opts.forEach(o => {
       const b = document.createElement('button');
       b.className = 'quiz-opt';
@@ -799,23 +931,43 @@ function pintarLeccion() {
       box.appendChild(b);
     });
     speak(w.hanzi);
+  } else if (item.type === 'pinyin') {
+    document.getElementById('lec-q').innerHTML = `⌨️ Escribe el pinyin de <b>${w.hanzi}</b><br><small>${w.es}</small>`;
+    wrap.classList.remove('hidden');
+    const inp = document.getElementById('lec-input');
+    inp.value = '';
+    setTimeout(() => inp.focus(), 60);
+  } else { // tono
+    document.getElementById('lec-q').innerHTML = `🔔 ¿Qué tono tiene <b>${w.hanzi}</b>? <button onclick="speak('${w.hanzi}')">🔊</button>`;
+    pintarTonoOpts([1, 2, 3, 4].map(t => ({ t, hz: TONO_INFO[t].s, py: t + 'º', es: TONO_INFO[t].n.split('· ')[1] })),
+      (o, b) => responderLeccion(o.t === tonoDe(w.pinyin), b), 'lec-opts');
+    speak(w.hanzi);
   }
+}
+function evaluarLecPinyin() {
+  if (!lec) return;
+  const w = lec.queue[lec.idx].word;
+  const val = document.getElementById('lec-input').value;
+  if (!val.trim()) return;
+  responderLeccion(quitarTonos(val) === quitarTonos(w.pinyin), null);
 }
 function responderLeccion(ok, btn) {
   const item = lec.queue[lec.idx];
   const w = item.word;
   [...document.getElementById('lec-opts').children].forEach(b => b.disabled = true);
+  document.getElementById('lec-input-wrap').classList.add('hidden');
+  const juego = item.type === 'tono' ? 'tonos' : item.type;
   trackWord(w.hanzi, ok);
-  trackGame(item.type === 'quiz' ? 'quiz' : 'escucha', ok);
+  trackGame(juego, ok);
   if (ok) {
     lec.ok++;
-    btn.classList.add('good');
+    if (btn) btn.classList.add('good');
     document.getElementById('lec-feedback').textContent = `✅ ${elogio()} ${w.hanzi} = ${w.es} [${w.pinyin}]`;
     addXP(10);
   } else {
     lec.hearts--;
     pintarHearts();
-    btn.classList.add('bad');
+    if (btn) btn.classList.add('bad');
     document.getElementById('lec-feedback').textContent = `❌ Era: ${w.hanzi} = ${w.es} [${w.pinyin}] · 💔 -1 corazón`;
   }
   actualizarMenu();
@@ -828,32 +980,41 @@ function responderLeccion(ok, btn) {
 function finLeccion(pass) {
   const stars = !pass ? 0 : (lec.hearts === 3 ? 3 : 2);
   const uIdx = UNIDADES.findIndex(x => x.id === lec.unit);
+  const esDiaria = lec.unit === 'diaria';
   let bonus = 0, sigBtn = '';
   if (pass) {
-    const cu = S.camino[lec.unit] || (S.camino[lec.unit] = { done: 0, stars: {} });
-    cu.done = Math.max(cu.done, lec.level);
-    cu.stars[lec.level] = Math.max(cu.stars[lec.level] || 0, stars);
-    save();
-    bonus = lec.level * 10 + stars * 5;
-    addXP(bonus); confeti();
-    maybeAchv('leccion1');
-    if (cu.done >= 3) maybeAchv('unidad1');
-    // siguiente: otro nivel, otra unidad o ruta
-    if (lec.level < 3) {
-      sigBtn = `<button class="btn primary" onclick="empezarLeccion('${lec.unit}',${lec.level + 1})">Siguiente: Nivel ${lec.level + 1} →</button>`;
-    } else if (uIdx < UNIDADES.length - 1) {
-      const nx = UNIDADES[uIdx + 1];
-      sigBtn = `<button class="btn primary" onclick="empezarLeccion('${nx.id}',1)">Siguiente: ${nx.emoji} ${nx.nombre} →</button>`;
+    if (!esDiaria) {
+      const cu = S.camino[lec.unit] || (S.camino[lec.unit] = { done: 0, stars: {} });
+      cu.done = Math.max(cu.done, lec.level);
+      cu.stars[lec.level] = Math.max(cu.stars[lec.level] || 0, stars);
+      save();
+      bonus = lec.level * 10 + stars * 5;
+      maybeAchv('leccion1');
+      if (cu.done >= 3) maybeAchv('unidad1');
+      if (lec.level < 3) {
+        sigBtn = `<button class="btn primary" onclick="empezarLeccion('${lec.unit}',${lec.level + 1})">Siguiente: Nivel ${lec.level + 1} →</button>`;
+      } else if (uIdx < UNIDADES.length - 1) {
+        const nx = UNIDADES[uIdx + 1];
+        sigBtn = `<button class="btn primary" onclick="empezarLeccion('${nx.id}',1)">Siguiente: ${nx.emoji} ${nx.nombre} →</button>`;
+      }
+    } else {
+      bonus = 20 + stars * 5;
+      sigBtn = `<button class="btn primary" onclick="empezarSesion()">🎯 Otra sesión →</button>`;
     }
+    addXP(bonus); confeti();
   }
-  document.getElementById('lec-title').textContent = pass ? '🎉 ¡Lección superada!' : '💔 ¡Sin corazones!';
+  document.getElementById('lec-title').textContent = pass
+    ? (esDiaria ? '🎯 ¡Sesión diaria completa!' : '🎉 ¡Lección superada!')
+    : '💔 ¡Sin corazones!';
   document.getElementById('lec-play').classList.add('hidden');
+  document.getElementById('lec-input-wrap').classList.add('hidden');
   document.getElementById('lec-q').innerHTML = pass
     ? `<b>${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</b><br>✅ ${lec.ok}/${lec.queue.length} · +${bonus} XP bonus`
     : `✅ ${lec.ok}/${lec.queue.length} · Las débiles irán al repaso 🎯`;
-  document.getElementById('lec-opts').innerHTML =
-    `<button class="btn" onclick="empezarLeccion('${lec.unit}',${lec.level})">🔄 Repetir</button>` +
-    sigBtn +
+  const repetir = esDiaria
+    ? `<button class="btn" onclick="empezarSesion()">🔄 Repetir</button>`
+    : `<button class="btn" onclick="empezarLeccion('${lec.unit}',${lec.level})">🔄 Repetir</button>`;
+  document.getElementById('lec-opts').innerHTML = repetir + sigBtn +
     `<button class="btn ghost" onclick="showView('ruta')">🛤️ Ruta</button>`;
   document.getElementById('lec-feedback').textContent = '';
   actualizarMenu();
@@ -893,6 +1054,7 @@ function renderRuta() {
 // ===== Atajos de teclado =====
 const activo = id => document.getElementById(id).classList.contains('active');
 document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && activo('view-leccion') && document.activeElement && document.activeElement.id === 'lec-input') { evaluarLecPinyin(); return; }
   if (e.key === 'Enter' && activo('view-pinyin')) { comprobarPinyin(); return; }
   if (activo('view-flash') && (e.key === ' ' || e.key === 'Enter')) {
     if (document.activeElement.tagName !== 'INPUT') { e.preventDefault(); voltearFlash(); }
@@ -1008,6 +1170,7 @@ function renderProgreso() {
     fila('⌨️ Pinyin', 'pinyin', S.games.pinyin.best + ' pts récord') +
     fila('🔔 Tonos', 'tonos', S.games.tonos.best + ' pts récord') +
     fila('🎤 Pronuncia', 'pronuncia', S.games.pronuncia.best + ' pts récord') +
+    fila('✍️ Escribe', 'escribe', S.games.escribe.best + ' pts récord') +
     fila('🃏 Memorama', 'mem', (S.games.mem.best[S.ui.memPairs || 8] ? ('récord ' + S.games.mem.best[S.ui.memPairs || 8]) : 'sin récord')) +
     fila('📇 Flashcards', 'flash', S.games.flash.vistas + ' vistas');
 
@@ -1030,6 +1193,8 @@ function renderProgreso() {
   document.getElementById('pg-backup').textContent = S.lastBackup
     ? 'Último respaldo: ' + new Date(S.lastBackup).toLocaleString()
     : 'Sin respaldo todavía';
+  document.querySelectorAll('#goal-set .chip-f').forEach(b =>
+    b.classList.toggle('active', parseInt(b.dataset.g) === S.goal));
 }
 
 // ================= CULTURA: poemas + fiestas =================
@@ -1122,6 +1287,44 @@ function renderCuaderno() {
   }).join('') : '<p class="pg-empty">Nada por aquí con ese filtro 🔍</p>';
 }
 
+// ===== Onboarding (primera visita) =====
+const OB_PASOS = [
+  { e: '🐼', t: 'Bienvenido a NiHao Lab', p: 'Aprenderás chino jugando: 5 minutos al día bastan. Tu progreso se guarda en este dispositivo.' },
+  { e: '🛤️', t: 'Sigue la ruta', p: 'Unidades por niveles con corazones y estrellas, como un juego. La 🎯 sesión diaria repasa justo lo que estás por olvidar.' },
+  { e: '🔔', t: 'Tonos y caracteres', p: 'El tono lo cambia todo (mā ≠ mǎ). Entrena el oído, traza los caracteres con ✍️ y habla con 🎤 desde el día 1.' },
+];
+let obIdx = 0;
+function mostrarOnboard() {
+  if (S.ui.onboard) return;
+  obIdx = 0;
+  pintarOnboard();
+  document.getElementById('onboard').classList.remove('hidden');
+}
+function pintarOnboard() {
+  const p = OB_PASOS[obIdx];
+  document.getElementById('ob-emoji').textContent = p.e;
+  document.getElementById('ob-t').textContent = p.t;
+  document.getElementById('ob-p').textContent = p.p;
+  document.getElementById('ob-dots').innerHTML = OB_PASOS.map((_, i) => `<span class="${i === obIdx ? 'on' : ''}"></span>`).join('');
+  document.getElementById('ob-next').textContent = obIdx === OB_PASOS.length - 1 ? '¡Empezar! 🚀' : 'Siguiente →';
+}
+function sigOnboard() {
+  if (obIdx < OB_PASOS.length - 1) { obIdx++; pintarOnboard(); }
+  else cerrarOnboard();
+}
+function cerrarOnboard() {
+  S.ui.onboard = true;
+  save();
+  document.getElementById('onboard').classList.add('hidden');
+}
+// ===== Meta diaria configurable =====
+function setGoal(n) {
+  S.goal = n;
+  save();
+  renderProgreso();
+  toastLogro('🎯 Meta diaria: ' + n + ' XP');
+}
+
 // ===== Import / Reset granular =====
 function onImportFile(input) {
   const f = input.files && input.files[0];
@@ -1134,7 +1337,7 @@ function onImportFile(input) {
   });
 }
 function resetDato(tipo) {
-  const nombres = { quiz: 'Quiz', escucha: 'Escucha', pinyin: 'Pinyin', tonos: 'Tonos', pronuncia: 'Pronuncia', mem: 'Memorama', flash: 'Flashcards', palabras: 'stats de palabras', cultura: 'poemas leídos' };
+  const nombres = { quiz: 'Quiz', escucha: 'Escucha', pinyin: 'Pinyin', tonos: 'Tonos', pronuncia: 'Pronuncia', escribe: 'Escribe', mem: 'Memorama', flash: 'Flashcards', palabras: 'stats de palabras', cultura: 'poemas leídos' };
   if (!confirm('¿Resetear ' + (nombres[tipo] || tipo) + '?')) return;
   if (tipo === 'palabras') resetPalabras();
   else if (tipo === 'cultura') { S.cultura = { leidos: [] }; save(); }
@@ -1174,5 +1377,7 @@ iniciarMemorama();
 nuevoMazoFlash();
 nuevoTono();
 nuevaPronuncia();
+nuevaEscribe();
 prRec = initRec();
+mostrarOnboard();
 document.getElementById('f-vistas').textContent = S.games.flash.vistas;

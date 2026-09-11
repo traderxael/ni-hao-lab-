@@ -12,6 +12,8 @@ App web para aprender chino mandarín (**HSK1 + HSK2**, 80 palabras) jugando. Si
 - **Shadowing con reconocimiento de voz** (`SpeechRecognition zh-CN`) en 🎤 Pronuncia
 - **Recuerdo activo** (testing effect) en quiz/escucha/pinyin y **frases en contexto** (input comprensible)
 - **Cultura real**: poemas Tang y fiestas, porque la lengua vive en su cultura
+- **🎯 Sesión diaria** de repaso mezclado (quiz+escucha+pinyin+tonos) con las palabras debidas
+- **Onboarding** de 3 pasos y **meta diaria configurable** (20/50/100 XP)
 
 ## 🎮 Juegos (6) + 🛤️ Ruta + 🏮 Cultura
 
@@ -23,6 +25,7 @@ App web para aprender chino mandarín (**HSK1 + HSK2**, 80 palabras) jugando. Si
 | ⌨️ Pinyin | Escribe la pronunciación (teclado de tonos incluido) |
 | 🔔 Tonos | El corazón del chino: distingue 1º–4º tono |
 | 🎤 Pronuncia | Shadowing con reconocimiento de voz zh-CN |
+| ✍️ Escribe | Traza el carácter: score por cobertura de tinta real |
 | 📇 Flashcards | Repaso con SRS y modo débiles |
 | 🛤️ Ruta | 8 unidades × 3 niveles estilo Duolingo, con corazones |
 | 🏮 Cultura | 5 poemas Tang con audio + fiestas y costumbres |

@@ -438,6 +438,59 @@ footer span { display: block; }
 .footer-zh { font-family: 'Noto Sans SC', sans-serif; font-size: 1rem; color: var(--sello); margin-bottom: 4px; opacity: .85; }
 @media (max-width: 720px) { footer { padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)); } }
 
+/* ============ CTA sesión diaria ============ */
+.daily-cta {
+  display: flex; align-items: center; gap: 14px; cursor: pointer;
+  background: var(--ink); color: var(--bg); border-radius: var(--r);
+  padding: 16px 20px; margin-bottom: 16px; box-shadow: var(--shadow-lg);
+  transition: transform .25s var(--ease);
+}
+html[data-theme="dark"] .daily-cta { color: #101113; }
+.daily-cta:hover { transform: translateY(-3px); }
+.daily-emoji { font-size: 1.8rem; }
+.daily-cta b { font-size: 1.05rem; display: block; }
+.daily-cta small { opacity: .75; font-size: .8rem; }
+.daily-cta i { margin-left: auto; font-style: normal; font-size: 1.3rem; font-weight: 800; }
+
+/* ============ ESCRIBE ============ */
+.es-box { text-align: center; }
+.es-canvas {
+  display: block; margin: 10px auto; border-radius: var(--r-sm);
+  background: var(--surface-2); border: 1.5px dashed var(--line);
+  touch-action: none; cursor: crosshair; max-width: 100%;
+}
+
+/* ============ input lección ============ */
+.lec-input { display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap; margin: 10px 0; }
+.lec-input input {
+  width: min(320px, 80vw); padding: 13px 18px; border-radius: 999px; border: 1.5px solid var(--line);
+  background: var(--surface-2); color: var(--ink); font: 600 1.05rem 'Manrope', sans-serif;
+  text-align: center; outline: none; transition: border-color .2s, box-shadow .2s;
+}
+.lec-input input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); background: var(--surface); }
+
+/* ============ meta diaria set ============ */
+.goal-set { display: flex; gap: 6px; align-items: center; margin-top: 10px; }
+.goal-set .subtitle { margin: 0 0 0 4px; }
+
+/* ============ Onboarding ============ */
+.onboard {
+  position: fixed; inset: 0; z-index: 200; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--bg) 60%, transparent);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 20px;
+}
+.ob-card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r);
+  box-shadow: var(--shadow-lg); padding: 34px 28px; max-width: 420px; text-align: center;
+  animation: entrar .4s var(--ease);
+}
+.ob-emoji { font-size: 3.4rem; margin-bottom: 10px; }
+.ob-card h2 { font-size: 1.35rem; font-weight: 800; margin-bottom: 8px; }
+.ob-card p { color: var(--ink-2); font-size: .95rem; min-height: 4.2em; }
+.ob-dots { display: flex; gap: 6px; justify-content: center; margin: 14px 0 6px; }
+.ob-dots span { width: 8px; height: 8px; border-radius: 99px; background: var(--line); transition: all .3s var(--ease); }
+.ob-dots span.on { width: 22px; background: var(--accent); }
+
 .hidden { display: none !important; }
 @media (max-width: 500px) {
   .mem-board { gap: 7px; }
