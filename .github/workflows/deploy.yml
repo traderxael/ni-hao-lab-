@@ -1,0 +1,24 @@
+# Auto-deploy a Vercel en cada push a main.
+# Requiere 3 secrets en GitHub (repo → Settings → Secrets → Actions):
+#   VERCEL_TOKEN      → vercel.com/account/tokens (Create)
+#   VERCEL_ORG_ID     → vercel.com → Settings → General → Team ID
+#   VERCEL_PROJECT_ID → proyecto en Vercel → Settings → General → Project ID
+# Alternativa sin secrets: en vercel.com importa el repo (Add New → Import
+# Git Repository) y cada push despliega solo.
+name: Deploy a Vercel
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'

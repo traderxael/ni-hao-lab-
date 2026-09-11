@@ -1,0 +1,24 @@
+{
+  "name": "NiHao Lab — Aprende Chino desde Español",
+  "short_name": "NiHao Lab",
+  "description": "Aprende chino mandarín (HSK1+HSK2) con 5 minijuegos: memorama, quiz, escucha, pinyin y flashcards.",
+  "lang": "es",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#14120f",
+  "theme_color": "#d7373f",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Quiz", "url": "./index.html?juego=quiz", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Escucha", "url": "./index.html?juego=escucha", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Tonos", "url": "./index.html?juego=tonos", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Pronuncia", "url": "./index.html?juego=pronuncia", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Fichas", "url": "./index.html?juego=flash", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
