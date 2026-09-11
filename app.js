@@ -12,6 +12,7 @@ function showView(name) {
   if (name === 'ruta') renderRuta();
   if (name === 'cultura') renderCultura();
   if (name === 'cuaderno') renderCuaderno();
+  if (name === 'tienda') renderTienda();
 }
 
 function borrarTodo() {
@@ -53,12 +54,14 @@ function initCats() {
 const rnd = arr => arr[Math.floor(Math.random() * arr.length)];
 function muestra(arr, n) { return [...arr].sort(() => Math.random() - .5).slice(0, n); }
 
-// ===== Racha + XP =====
+// ===== Racha + XP + monedas =====
 function registrarVisita() {
   const hoy = diaLocal();
   if (S.lastDay !== hoy) {
     const ayer = diaLocal(new Date(Date.now() - 864e5));
-    S.racha = (S.lastDay === ayer) ? S.racha + 1 : 1;
+    if (S.lastDay === ayer) S.racha = S.racha + 1;
+    else if ((S.freeze || 0) > 0) { S.freeze--; toastLogro('🧊 Tu protector salvó la racha'); }
+    else S.racha = 1;
     S.lastDay = hoy;
     save();
   }
@@ -66,12 +69,14 @@ function registrarVisita() {
   if (S.racha >= 7) maybeAchv('racha7');
 }
 function addXP(n) {
+  let ganancia = n;
+  if ((S.xp2 || 0) > 0) { ganancia = n * 2; S.xp2--; save(); }
   const hoy = diaLocal();
   const antes = S.xpByDay[hoy] || 0;
-  S.xp += n;
-  S.xpByDay[hoy] = antes + n;
+  S.xp += ganancia;
+  S.xpByDay[hoy] = antes + ganancia;
   save();
-  toastXP(n);
+  toastXP(ganancia, ganancia !== n);
   if (S.xp >= 10) maybeAchv('primer_paso');
   if (S.xp >= 100) maybeAchv('cien');
   if (S.xp >= 500) maybeAchv('quinientos');
@@ -79,6 +84,17 @@ function addXP(n) {
     toastLogro('🎯 ¡Meta diaria cumplida! (' + S.goal + ' XP)');
     confeti();
   }
+  actualizarMenu();
+}
+function addMonedas(n) {
+  S.coins = (S.coins || 0) + n;
+  save();
+  const t = document.createElement('div');
+  t.className = 'xp-toast';
+  t.textContent = '🪙 +' + n;
+  document.body.appendChild(t);
+  apilarToast(t, 30);
+  setTimeout(() => t.remove(), 1300);
   actualizarMenu();
 }
 function maybeAchv(id) {
@@ -96,10 +112,10 @@ function apilarToast(el, base) {
 }
 const ELOGIOS = ['¡Genial!', '¡Exacto!', '¡Brutal!', '¡De lujo!', '¡Súper!', '¡Nihao! 🐼', '¡Imparable!'];
 const elogio = () => rnd(ELOGIOS);
-function toastXP(n) {
+function toastXP(n, doble) {
   const t = document.createElement('div');
   t.className = 'xp-toast';
-  t.textContent = '+' + n + ' XP';
+  t.textContent = '+' + n + ' XP' + (doble ? ' ⚡x2' : '');
   document.body.appendChild(t);
   apilarToast(t, 22);
   setTimeout(() => t.remove(), 1300);
@@ -155,6 +171,7 @@ function actualizarMenu() {
   document.getElementById('xp-nivel').textContent = nivel;
   document.getElementById('xp-titulo').textContent = tituloNivel(nivel);
   document.getElementById('xp-racha').textContent = S.racha;
+  document.getElementById('coins').textContent = '🪙 ' + (S.coins || 0);
   document.getElementById('xp-fill').style.width = ((S.xp % 100)) + '%';
   document.getElementById('xp-next').textContent = (100 - (S.xp % 100)) + ' XP al nivel ' + (nivel + 1);
   const p = pool();
@@ -185,6 +202,7 @@ function actualizarMenu() {
   document.getElementById('record-cultura').textContent = `${leidos().length}/${POEMAS.length} poemas 🏮`;
   const cc = contadores(VOCAB);
   document.getElementById('record-cuaderno').textContent = `${cc.dominada}/${VOCAB.length} dominadas ✅`;
+  document.getElementById('record-tienda').textContent = (S.coins || 0) + ' monedas';
 }
 
 // ===== Audio gratis (lento opcional) =====
@@ -289,6 +307,7 @@ function voltear(id, el) {
         const w = document.getElementById('mem-win');
         w.textContent = msg; w.classList.remove('hidden');
         addXP(40); confeti();
+        addMonedas(6);
         S.games.mem.wins++;
         const prevN = S.games.mem.best[memTotal] ? parseInt(S.games.mem.best[memTotal]) : Infinity;
         if (memIntentos < prevN) S.games.mem.best[memTotal] = `${memIntentos} intentos · ${memSeg}s`;
@@ -336,8 +355,8 @@ function finRonda(cancel) {
   const pct = Math.round(qRondaOk / RONDA_LEN * 100);
   document.getElementById('q-feedback').textContent =
     `🎯 Ronda completa: ${qRondaOk}/${RONDA_LEN} (${pct}%)` + (qRondaOk >= 7 ? ' ¡Brutal! +20 XP' : ' +5 XP por intentarlo');
-  addXP(qRondaOk >= 7 ? 20 : 5);
-  if (qRondaOk >= 7) confeti();
+    addXP(qRondaOk >= 7 ? 20 : 5);
+    if (qRondaOk >= 7) { confeti(); addMonedas(5); }
   actualizarMenu();
 }
 function nuevaPregunta() {
@@ -599,6 +618,7 @@ function initRec() {
       prPts += 15;
       document.getElementById('pr-feedback').textContent = `✅ ${elogio()} ¡Tu ${prActual.hanzi} [${prActual.pinyin}] se entendió! +15 XP`;
       addXP(15);
+      addMonedas(2);
       if (S.games.pronuncia.ok >= 3) maybeAchv('voz');
       setTimeout(nuevaPronuncia, 1800);
     } else {
@@ -648,6 +668,7 @@ function prAuto(ok) {
     prPts += 10;
     document.getElementById('pr-feedback').textContent = `✅ Marcado como logrado. +10 XP`;
     addXP(10);
+    addMonedas(2);
     if (S.games.pronuncia.ok >= 3) maybeAchv('voz');
     setTimeout(nuevaPronuncia, 1200);
   } else {
@@ -703,8 +724,12 @@ function insertTono(ch) {
 function pistaPinyin() {
   if (!pActual) return;
   const sil = pActual.pinyin.split(' ')[0];
-  document.getElementById('p-feedback').textContent =
-    `💡 Empieza por «${sil.charAt(0)}»… (1ª sílaba: ${sil.length} letras)`;
+  if ((S.pistas || 0) > 0) {
+    S.pistas--; save();
+    document.getElementById('p-feedback').textContent = `💡 Pista pro: la 1ª sílaba es «${sil}» · quedan ${S.pistas}`;
+  } else {
+    document.getElementById('p-feedback').textContent = `💡 Empieza por «${sil.charAt(0)}»… (1ª sílaba: ${sil.length} letras). Pistas pro en 🪙 Tienda`;
+  }
 }
 function comprobarPinyin() {
   const val = document.getElementById('p-input').value;
@@ -785,7 +810,7 @@ function redrawTrazos() {
   g.textAlign = 'center'; g.textBaseline = 'middle';
   g.fillStyle = 'rgba(128,138,155,.28)';
   g.fillText(esActual.hanzi, ES_SIZE / 2, ES_SIZE / 2 + ES_SIZE * 0.03);
-  g.strokeStyle = getComputedStyle(document.documentElement).getAttribute('data-theme') === 'dark' ? '#f2f4f7' : '#1c1e21';
+  g.strokeStyle = document.documentElement.getAttribute('data-theme') === 'dark' ? '#f2f4f7' : '#1c1e21';
   g.lineWidth = ES_SIZE * 0.055; g.lineCap = 'round'; g.lineJoin = 'round';
   esPts.forEach(st => {
     if (st.length < 1) return;
@@ -833,6 +858,7 @@ function comprobarEscribe() {
   if (pass) {
     esPtsSesion += 15;
     addXP(15);
+    addMonedas(2);
     if (S.games.escribe.ok >= 3) maybeAchv('trazo');
     setTimeout(nuevaEscribe, 1600);
   }
@@ -853,6 +879,12 @@ function unidadDesbloqueada(i) {
   const prev = UNIDADES[i - 1].id;
   return ((S.camino[prev] || {}).done || 0) >= 1;
 }
+function corazonesInicio() {
+  let h = 3;
+  const ex = Math.min(S.corazonesExtra || 0, 2);
+  if (ex) { h += ex; S.corazonesExtra -= ex; save(); }
+  return h;
+}
 function empezarLeccion(uid, level) {
   const words = unitWords(uid);
   if (words.length < 4) { toastLogro('😅 Pocas palabras en esta unidad'); return; }
@@ -862,7 +894,7 @@ function empezarLeccion(uid, level) {
   lec = {
     unit: uid, level,
     queue: elegidas.map((w, i) => ({ type: tipoPara(level, i), word: w })),
-    idx: 0, hearts: 3, ok: 0
+    idx: 0, hearts: corazonesInicio(), ok: 0
   };
   showView('leccion');
   pintarLeccion();
@@ -876,7 +908,7 @@ function empezarSesion() {
   lec = {
     unit: 'diaria', level: 0,
     queue: deb.map((w, i) => ({ type: CICLO_TIPOS[i % 4], word: w })),
-    idx: 0, hearts: 3, ok: 0
+    idx: 0, hearts: corazonesInicio(), ok: 0
   };
   showView('leccion');
   pintarLeccion();
@@ -1002,6 +1034,7 @@ function finLeccion(pass) {
       sigBtn = `<button class="btn primary" onclick="empezarSesion()">🎯 Otra sesión →</button>`;
     }
     addXP(bonus); confeti();
+    addMonedas(esDiaria ? 8 + stars * 2 : 5 + stars * 2);
   }
   document.getElementById('lec-title').textContent = pass
     ? (esDiaria ? '🎯 ¡Sesión diaria completa!' : '🎉 ¡Lección superada!')
@@ -1285,6 +1318,49 @@ function renderCuaderno() {
       `<div class="cu-mid"><b>${r.w.es}</b><small>HSK${r.w.hsk} · ${r.w.cat} · ${e ? `✅${e.ok} ❌${e.fail} · caja ${e.box || 1}` : 'sin practicar'}</small></div>` +
       `<span class="st-badge">${CU_ETI[r.st]}</span></div>`;
   }).join('') : '<p class="pg-empty">Nada por aquí con ese filtro 🔍</p>';
+}
+
+// ================= TIENDA 🪙 (pay-to-win con monedas del juego) =================
+const TIENDA = [
+  { id: 'corazon', emoji: '❤️', nombre: '+1 corazón', costo: 30, desc: 'Si estás en una lección, recupera 1 corazón al instante. Si no, guarda +1 para tu próxima lección (máx 2).' },
+  { id: 'freeze', emoji: '🧊', nombre: 'Protector de racha', costo: 50, desc: 'Si un día no practicas, tu racha 🔥 no se rompe. Un uso por día perdido.' },
+  { id: 'xp2', emoji: '⚡', nombre: 'XP x2', costo: 40, desc: 'Tus próximas 10 ganancias de XP cuentan doble.' },
+  { id: 'pista', emoji: '💡', nombre: 'Pack 3 pistas pro', costo: 25, desc: 'En ⌨️ Pinyin, la pista te revela la 1ª sílaba completa con tono.' },
+];
+function comprar(id) {
+  const it = TIENDA.find(x => x.id === id);
+  if (!it) return;
+  if ((S.coins || 0) < it.costo) { toastLogro('🪙 Te faltan monedas: gana jugando lecciones y sesiones'); return; }
+  S.coins -= it.costo;
+  S.gastado = (S.gastado || 0) + it.costo;
+  S.items = S.items || {};
+  S.items[id] = (S.items[id] || 0) + 1;
+  if (id === 'corazon') {
+    if (lec && lec.hearts < 3) { lec.hearts++; pintarHearts(); toastLogro('❤️ +1 corazón ahora mismo'); }
+    else { S.corazonesExtra = Math.min((S.corazonesExtra || 0) + 1, 2); toastLogro('❤️ Guardado para tu próxima lección'); }
+  }
+  if (id === 'freeze') { S.freeze = (S.freeze || 0) + 1; toastLogro('🧊 Protector activo (' + S.freeze + ' en reserva)'); }
+  if (id === 'xp2') { S.xp2 = (S.xp2 || 0) + 10; toastLogro('⚡ XP x2 durante 10 ganancias'); }
+  if (id === 'pista') { S.pistas = (S.pistas || 0) + 3; toastLogro('💡 +3 pistas pro (' + S.pistas + ' disponibles)'); }
+  save();
+  if (S.gastado >= 100) maybeAchv('mercader');
+  actualizarMenu();
+  renderTienda();
+}
+function renderTienda() {
+  const wrap = document.getElementById('shop-items');
+  if (!wrap) return;
+  wrap.innerHTML = TIENDA.map(it => {
+    const stock = it.id === 'freeze' ? (S.freeze || 0) : it.id === 'xp2' ? (S.xp2 || 0) : it.id === 'pista' ? (S.pistas || 0) : (S.corazonesExtra || 0);
+    return `<div class="card shop-item">
+      <div class="card-emoji">${it.emoji}</div>
+      <h3>${it.nombre}</h3>
+      <p>${it.desc}</p>
+      <div class="record">En reserva: <b>${stock}</b> · comprados: ${S.items[it.id] || 0}</div>
+      <button class="btn ${S.coins >= it.costo ? '' : 'ghost'}" onclick="comprar('${it.id}')" ${S.coins >= it.costo ? '' : 'disabled'}>🪙 ${it.costo}</button>
+    </div>`;
+  }).join('');
+  document.getElementById('shop-coins').textContent = '🪙 Tienes ' + (S.coins || 0) + ' monedas · gastadas: ' + (S.gastado || 0);
 }
 
 // ===== Onboarding (primera visita) =====

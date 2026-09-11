@@ -14,6 +14,7 @@ App web para aprender chino mandarín (**HSK1 + HSK2**, 80 palabras) jugando. Si
 - **Cultura real**: poemas Tang y fiestas, porque la lengua vive en su cultura
 - **🎯 Sesión diaria** de repaso mezclado (quiz+escucha+pinyin+tonos) con las palabras debidas
 - **Onboarding** de 3 pasos y **meta diaria configurable** (20/50/100 XP)
+- **🪙 Tienda pay-to-win sin dinero real**: monedas ganadas jugando → corazones extra, 🧊 protector de racha, ⚡ XP x2 y 💡 pistas pro
 
 ## 🎮 Juegos (6) + 🛤️ Ruta + 🏮 Cultura
 

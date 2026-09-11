@@ -28,6 +28,9 @@ function defaultStore() {
     achv: {},             // id -> fecha ISO
     camino: {},           // unitId -> {done: nivel máx superado (0-3), stars: {1:★,2:★,3:★}}
     cultura: { leidos: [] }, // ids de poemas leídos
+    // economía pay-to-win (monedas del juego, sin dinero real)
+    coins: 0, gastado: 0, freeze: 0, xp2: 0, pistas: 0, corazonesExtra: 0,
+    items: {},            // id de item -> veces comprado
     ui: { tema: 'light', sonido: true, cat: 'todas', memPairs: 8 },
     lastBackup: null
   };
@@ -211,6 +214,7 @@ const LOGROS = [
   { id: 'poeta',       emoji: '🖋️', nombre: 'Poeta', desc: 'Lee 3 poemas clásicos' },
   { id: 'voz',         emoji: '🎤', nombre: 'Buena voz', desc: 'Acierta 3 pronunciaciones con el micro' },
   { id: 'trazo',       emoji: '✍️', nombre: 'Calígrafo', desc: 'Completa 3 trazados con ≥60% de cobertura' },
+  { id: 'mercader',    emoji: '🪙', nombre: 'Cliente frecuente', desc: 'Gasta 100 monedas en la tienda' },
 ];
 // Devuelve true si es nuevo desbloqueo
 function desbloquear(id) {

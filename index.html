@@ -50,6 +50,7 @@
         <div class="xp-bar" role="progressbar"><div id="xp-fill"></div></div>
       </div>
       <div class="streak-badge" title="Racha diaria">🔥 <b id="xp-racha">0</b></div>
+      <div class="streak-badge" id="coins" title="Monedas" onclick="showView('tienda')" role="button" tabindex="0">🪙 0</div>
     </div>
 
     <nav class="main-nav">
@@ -62,10 +63,12 @@
       <button onclick="showView('tonos')" class="nav-btn" id="btn-tonos"><span>🔔</span>Tonos</button>
       <button onclick="showView('pronuncia')" class="nav-btn" id="btn-pronuncia"><span>🎤</span>Pronuncia</button>
       <button onclick="showView('escribe')" class="nav-btn" id="btn-escribe"><span>✍️</span>Escribe</button>
+      <button onclick="showView('tienda')" class="nav-btn" id="btn-tienda"><span>🪙</span>Tienda</button>
       <button onclick="showView('flash')" class="nav-btn" id="btn-flash"><span>📇</span>Fichas</button>
       <button onclick="showView('cultura')" class="nav-btn" id="btn-cultura"><span>🏮</span>Cultura</button>
       <button onclick="showView('cuaderno')" class="nav-btn" id="btn-cuaderno"><span>📔</span>Cuaderno</button>
       <button onclick="showView('progreso')" class="nav-btn" id="btn-progreso"><span>📊</span>Progreso</button>
+      <button onclick="showView('enjambre')" class="nav-btn" id="btn-enjambre"><span>🤖</span>Enjambre</button>
     </nav>
   </header>
 
@@ -173,6 +176,14 @@
           <p>Traza el carácter sobre la guía: se puntúa tu tinta.</p>
           <div class="record">🏆 <span id="record-escribe">0 pts</span></div>
           <span class="card-cta">Trazar <i>→</i></span>
+        </article>
+
+        <article class="card" style="--c1:#f5a623;--c2:#ffd34d" onclick="showView('tienda')">
+          <div class="card-emoji">🪙</div>
+          <h3>Tienda</h3>
+          <p>Gasta tus monedas: corazones, racha protegida, XP x2 y pistas.</p>
+          <div class="record">🪙 <span id="record-tienda">0 monedas</span></div>
+          <span class="card-cta">Comprar <i>→</i></span>
         </article>
 
         <article class="card" style="--c1:#d63031;--c2:#ff7675" onclick="showView('flash')">
@@ -435,6 +446,17 @@
       <div id="cult-poemas" class="poemas"></div>
       <h3 class="cult-h">🎎 Fiestas y costumbres</h3>
       <div id="cult-fiestas" class="cards"></div>
+    </section>
+
+    <!-- ============ TIENDA ============ -->
+    <section id="view-tienda" class="view">
+      <div class="view-head">
+        <div><h2>🪙 Tienda</h2><p class="subtitle">Pay-to-win del bueno: las monedas se ganan jugando, nunca con dinero real.</p></div>
+        <button class="btn ghost" onclick="showView('menu')">← Menú</button>
+      </div>
+      <div class="record" id="shop-coins">🪙 0</div>
+      <div class="cards" id="shop-items"></div>
+      <p class="subtitle" style="margin-top:14px">Cómo ganar monedas: lección superada +5·+9 · sesión diaria +8·+12 · memorama +6 · ronda ×10 +5 · trazo o pronunciación +2.</p>
     </section>
 
     <!-- ============ CUADERNO ============ -->
