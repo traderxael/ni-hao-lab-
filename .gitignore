@@ -1,0 +1,7 @@
+.vercel
+
+# ajenos a la app
+evo-bots/
+cohere_video/
+cohere_*
+

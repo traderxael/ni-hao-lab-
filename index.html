@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NiHao Lab — Aprende Chino desde Español</title>
+  <meta name="description" content="Aprende chino mandarín (HSK1+HSK2) con 5 minijuegos. Funciona sin internet." />
+  <meta name="theme-color" content="#d7373f" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="NiHao Lab" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-180.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="bg-blobs" aria-hidden="true"><span></span><span></span><span></span></div>
+
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-mark">中</div>
+        <div class="brand-text">
+          <h1>NiHao Lab</h1>
+          <p>Aprende chino desde español · HSK1 + HSK2</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="btn-sonido" onclick="toggleSonido()" title="Activar/silenciar voz" aria-label="Sonido">🔊</button>
+        <button class="icon-btn" id="btn-tema" onclick="toggleTema()" title="Cambiar tema" aria-label="Tema">🌙</button>
+      </div>
+    </div>
+
+    <div class="stats-bar">
+      <div class="level-badge">
+        <span class="level-num" id="xp-nivel">1</span>
+        <span class="level-label">nivel</span>
+      </div>
+      <div class="xp-block">
+        <div class="xp-meta">
+          <span><b id="xp-total">0</b> XP · <span class="xp-title" id="xp-titulo">🐣 Pollito</span></span>
+          <span class="xp-next" id="xp-next">100 XP al nivel 2</span>
+        </div>
+        <div class="xp-bar" role="progressbar"><div id="xp-fill"></div></div>
+      </div>
+      <div class="streak-badge" title="Racha diaria">🔥 <b id="xp-racha">0</b></div>
+    </div>
+
+    <nav class="main-nav">
+      <button onclick="showView('menu')" class="nav-btn active" id="btn-menu"><span>🏠</span>Inicio</button>
+      <button onclick="showView('ruta')" class="nav-btn" id="btn-ruta"><span>🛤️</span>Ruta</button>
+      <button onclick="showView('memorama')" class="nav-btn" id="btn-memorama"><span>🃏</span>Memorama</button>
+      <button onclick="showView('quiz')" class="nav-btn" id="btn-quiz"><span>✅</span>Quiz</button>
+      <button onclick="showView('escucha')" class="nav-btn" id="btn-escucha"><span>🔊</span>Escucha</button>
+      <button onclick="showView('pinyin')" class="nav-btn" id="btn-pinyin"><span>⌨️</span>Pinyin</button>
+      <button onclick="showView('tonos')" class="nav-btn" id="btn-tonos"><span>🔔</span>Tonos</button>
+      <button onclick="showView('pronuncia')" class="nav-btn" id="btn-pronuncia"><span>🎤</span>Pronuncia</button>
+      <button onclick="showView('flash')" class="nav-btn" id="btn-flash"><span>📇</span>Fichas</button>
+      <button onclick="showView('cultura')" class="nav-btn" id="btn-cultura"><span>🏮</span>Cultura</button>
+      <button onclick="showView('cuaderno')" class="nav-btn" id="btn-cuaderno"><span>📔</span>Cuaderno</button>
+      <button onclick="showView('progreso')" class="nav-btn" id="btn-progreso"><span>📊</span>Progreso</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ============ MENÚ ============ -->
+    <section id="view-menu" class="view active">
+      <div class="view-head">
+        <div>
+          <h2>Elige tu práctica</h2>
+          <p class="subtitle">Juegos, ruta guiada y cultura para memorizar, entender y pronunciar.</p>
+        </div>
+        <div class="filter-chip">
+          <label for="filtro-hsk">Nivel</label>
+          <select id="filtro-hsk" onchange="cambiarFiltro()">
+            <option value="0">HSK1 + HSK2</option>
+            <option value="1">Solo HSK1</option>
+            <option value="2">Solo HSK2</option>
+          </select>
+          <label for="filtro-cat">Tema</label>
+          <select id="filtro-cat" onchange="cambiarFiltro()">
+            <option value="todas">Todos</option>
+          </select>
+          <span class="chip-count" id="conteo">80 palabras</span>
+          <span class="chip-count due-chip" id="srs-due">✅ Repaso al día</span>
+        </div>
+      </div>
+
+      <details class="metodo">
+        <summary>🧠 Cómo aprende tu cerebro chino (el método de la app)</summary>
+        <ol>
+          <li><b>Poco y cada día</b> — el repaso espaciado (cajas Leitner 🎯) vence a las maratones: la app te trae cada palabra justo cuando estás a punto de olvidarla.</li>
+          <li><b>Tonos primero</b> — en chino el tono cambia el significado (mā mamá ≠ mǎ caballo). Entrena el oído con 🔔 y pares mínimos antes que nada.</li>
+          <li><b>Desmonta los caracteres</b> — cada hànzì tiene radicales con sentido (妈 = 女 mujer + 马 sonido mǎ). Míralos en 📇 y los recordarás por lógica, no por fuerza.</li>
+          <li><b>Habla desde el día 1</b> — con 🎤 haces <i>shadowing</i>: imitas al modelo y el micro confirma. Producir fija más que reconocer.</li>
+          <li><b>Recuerda activo, no releas</b> — quiz, escucha y pinyin te obligan a sacar la palabra de tu cabeza: es lo que crea memoria fuerte.</li>
+          <li><b>Contexto siempre</b> — las frases 📖 y los poemas 🏮 te dan input comprensible: palabras vivas, no listas muertas.</li>
+        </ol>
+      </details>
+
+      <div class="cards">
+        <article class="card" style="--c1:#f2b134;--c2:#e08d1e" onclick="showView('ruta')">
+          <div class="card-emoji">🛤️</div>
+          <h3>Ruta</h3>
+          <p>Camino estilo Duolingo: 8 unidades, 3 niveles, corazones.</p>
+          <div class="record">🛤️ <span id="record-ruta">Empieza hoy 🛤️</span></div>
+          <span class="card-cta">Empezar <i>→</i></span>
+        </article>
+        <article class="card" style="--c1:#6c5ce7;--c2:#a29bfe" onclick="showView('memorama')">
+          <div class="card-emoji">🃏</div>
+          <h3>Memorama</h3>
+          <p>Une cada 汉字 con su traducción española. 8 parejas.</p>
+          <div class="record">🏆 <span id="record-memorama">—</span></div>
+          <span class="card-cta">Jugar <i>→</i></span>
+        </article>
+
+        <article class="card" style="--c1:#0984e3;--c2:#74b9ff" onclick="showView('quiz')">
+          <div class="card-emoji">✅</div>
+          <h3>Quiz</h3>
+          <p>Opción múltiple en ambos sentidos. Racha = doble XP.</p>
+          <div class="record">🏆 <span id="record-quiz">0 pts</span></div>
+          <span class="card-cta">Jugar <i>→</i></span>
+        </article>
+
+        <article class="card" style="--c1:#00b894;--c2:#55efc4" onclick="showView('escucha')">
+          <div class="card-emoji">🔊</div>
+          <h3>Escucha</h3>
+          <p>Oye la palabra y elige qué significa. Entrena el oído.</p>
+          <div class="record">🏆 <span id="record-escucha">0 pts</span></div>
+          <span class="card-cta">Jugar <i>→</i></span>
+        </article>
+
+        <article class="card" style="--c1:#e17055;--c2:#fab1a0" onclick="showView('pinyin')">
+          <div class="card-emoji">⌨️</div>
+          <h3>Escribe pinyin</h3>
+          <p>Lee el carácter y teclea su pronunciación.</p>
+          <div class="record">🏆 <span id="record-pinyin">0 pts</span></div>
+          <span class="card-cta">Jugar <i>→</i></span>
+        </article>
+
+        <article class="card" style="--c1:#f2b134;--c2:#e08d1e" onclick="showView('tonos')">
+          <div class="card-emoji">🔔</div>
+          <h3>Tonos</h3>
+          <p>Escucha y elige el tono (1º-4º) o pares mínimos.</p>
+          <div class="record">🏆 <span id="record-tonos">0 pts</span></div>
+          <span class="card-cta">Jugar <i>→</i></span>
+        </article>
+
+        <article class="card" style="--c1:#6c5ce7;--c2:#fd79a8" onclick="showView('pronuncia')">
+          <div class="card-emoji">🎤</div>
+          <h3>Pronuncia</h3>
+          <p>Imita el modelo y deja que el micro te corrija.</p>
+          <div class="record">🏆 <span id="record-pronuncia">0 pts</span></div>
+          <span class="card-cta">Hablar <i>→</i></span>
+        </article>
+
+        <article class="card" style="--c1:#d63031;--c2:#ff7675" onclick="showView('flash')">
+          <div class="card-emoji">📇</div>
+          <h3>Flashcards</h3>
+          <p>Repaso rápido con audio. Marca lo que ya sabes.</p>
+          <div class="record">📚 <span id="record-flash">0 vistas</span></div>
+          <span class="card-cta">Repasar <i>→</i></span>
+        </article>
+
+        <article class="card" style="--c1:#a41f27;--c2:#f2b134" onclick="showView('cultura')">
+          <div class="card-emoji">🏮</div>
+          <h3>Cultura</h3>
+          <p>Poemas Tang con audio y fiestas tradicionales.</p>
+          <div class="record">🏮 <span id="record-cultura">0/5 poemas 🏮</span></div>
+          <span class="card-cta">Descubrir <i>→</i></span>
+        </article>
+
+        <article class="card" style="--c1:#3a7bfd;--c2:#7aa8ff" onclick="showView('cuaderno')">
+          <div class="card-emoji">📔</div>
+          <h3>Mi cuaderno</h3>
+          <p>Tu registro personal: qué llevas aprendido y qué repasar.</p>
+          <div class="record">✅ <span id="record-cuaderno">0/80 dominadas ✅</span></div>
+          <span class="card-cta">Abrir <i>→</i></span>
+        </article>
+      </div>
+
+      <div class="menu-foot">
+        <button class="btn ghost" onclick="borrarTodo()">🗑️ Borrar progreso</button>
+      </div>
+    </section>
+
+    <!-- ============ RUTA ============ -->
+    <section id="view-ruta" class="view">
+      <div class="view-head">
+        <div><h2>🛤️ Tu ruta</h2><p class="subtitle" id="ruta-resumen">—</p></div>
+        <button class="btn ghost" onclick="showView('menu')">← Menú</button>
+      </div>
+      <div id="ruta-path" class="ruta-path"></div>
+    </section>
+
+    <!-- ============ LECCIÓN ============ -->
+    <section id="view-leccion" class="view">
+      <div class="lec-top">
+        <button class="btn ghost sm" onclick="salirLeccion()" title="Salir de la lección">✕</button>
+        <div class="lec-prog"><div id="lec-prog-fill"></div></div>
+        <div id="lec-hearts" class="lec-hearts">❤️❤️❤️</div>
+      </div>
+      <div id="lec-title" class="lec-title">—</div>
+      <div id="lec-q" class="quiz-q">—</div>
+      <div id="lec-play" class="listen-hero hidden"><button class="play-btn" title="Escuchar">▶</button></div>
+      <div id="lec-opts" class="quiz-opts"></div>
+      <div id="lec-feedback" class="ch-result"></div>
+    </section>
+
+    <!-- ============ MEMORAMA ============ -->
+    <section id="view-memorama" class="view">
+      <div class="view-head">
+        <div><h2>🃏 Memorama</h2><p class="subtitle">Empareja 汉字 ↔ español. +5 XP por pareja, +40 al completar.</p></div>
+        <button class="btn ghost" onclick="showView('menu')">← Menú</button>
+      </div>
+      <div class="stats">
+        <span class="stat">🎯 Intentos <b id="mem-intentos">0</b></span>
+        <span class="stat">🧩 Parejas <b id="mem-parejas">0/8</b></span>
+        <span class="stat">⏱️ Tiempo <b id="mem-tiempo">0s</b></span>
+      </div>
+      <div id="mem-win" class="win-msg hidden"></div>
+      <div class="mem-levels" id="mem-levels">
+        <button class="btn ghost sm" data-n="6" onclick="setMemPairs(6)">6 parejas</button>
+        <button class="btn ghost sm" data-n="8" onclick="setMemPairs(8)">8 parejas</button>
+        <button class="btn ghost sm" data-n="12" onclick="setMemPairs(12)">12 parejas</button>
+      </div>
+      <div id="mem-board" class="mem-board"></div>
+      <div class="controls"><button class="btn" onclick="iniciarMemorama()">🔄 Nuevo tablero</button></div>
+    </section>
+
+    <!-- ============ QUIZ ============ -->
+    <section id="view-quiz" class="view">
+      <div class="view-head">
+        <div><h2>✅ Quiz</h2><p class="subtitle">Cuatro opciones, una correcta. Las rachas dan bonus.</p></div>
+        <button class="btn ghost" onclick="showView('menu')">← Menú</button>
+      </div>
+      <div class="stats">
+        <span class="stat">⭐ Puntos <b id="q-pts">0</b></span>
+        <span class="stat">🔥 Racha <b id="q-streak">0</b></span>
+        <span class="stat">❓ Pregunta <b id="q-n">0</b></span>
+        <span class="stat hidden" id="q-ronda"></span>
+        <span class="stat hidden" id="q-timer"></span>
+      </div>
+      <div class="repaso-banner hidden">🎯 Modo repaso: <b class="repaso-count"></b> <button class="btn ghost sm" onclick="salirRepaso()">Salir ✕</button></div>
+      <div id="q-pregunta" class="quiz-q">Pulsa «Nueva» para empezar</div>
+      <div id="q-opts" class="quiz-opts"></div>
+      <div id="q-feedback" class="ch-result"></div>
+      <div class="controls"><button class="btn" onclick="nuevaPregunta()">🔄 Nueva pregunta</button><button class="btn ghost" id="btn-contra" onclick="toggleContra()">⚡ Contrarreloj</button><button class="btn ghost" id="btn-ronda" onclick="toggleRonda()">🎯 Ronda ×10</button></div>
+    </section>
+
+    <!-- ============ ESCUCHA ============ -->
+    <section id="view-escucha" class="view">
+      <div class="view-head">
+        <div><h2>🔊 Escucha</h2><p class="subtitle">Se reproduce una palabra. Elige su significado correcto.</p></div>
+        <button class="btn ghost" onclick="showView('menu')">← Menú</button>
+      </div>
+      <div class="stats">
+        <span class="stat">⭐ Puntos <b id="e-pts">0</b></span>
+        <span class="stat">🔥 Racha <b id="e-streak">0</b></span>
+        <span class="stat">🎧 Ronda <b id="e-n">0</b></span>
+      </div>
+      <div class="repaso-banner hidden">🎯 Modo repaso: <b class="repaso-count"></b> <button class="btn ghost sm" onclick="salirRepaso()">Salir ✕</button></div>
+      <div class="listen-hero">
+        <button class="play-btn" onclick="nuevaEscucha()" title="Escuchar nueva palabra">▶</button>
+        <button class="btn ghost" onclick="repetirAudio()">🔁 Repetir</button>
+        <button class="btn ghost" onclick="escucharLento()">🐢 Lento</button>
+      </div>
+      <div id="e-opts" class="quiz-opts"></div>
+      <div id="e-feedback" class="ch-result"></div>
+    </section>
+
+    <!-- ============ PINYIN ============ -->
+    <section id="view-pinyin" class="view">
+      <div class="view-head">
+        <div><h2>⌨️ Escribe pinyin</h2><p class="subtitle">Mira el carácter y escribe cómo se pronuncia.</p></div>
+        <button class="btn ghost" onclick="showView('menu')">← Menú</button>
+      </div>
+      <div class="stats">
+        <span class="stat">⭐ Puntos <b id="p-pts">0</b></span>
+        <span class="stat">🔤 Ronda <b id="p-n">0</b></span>
+      </div>
+      <div class="repaso-banner hidden">🎯 Modo repaso: <b class="repaso-count"></b> <button class="btn ghost sm" onclick="salirRepaso()">Salir ✕</button></div>
+      <div class="pinyin-box">
+        <div id="p-hanzi" class="pinyin-hanzi">—</div>
+        <div id="p-es" class="pinyin-es">—</div>
+        <button class="btn ghost" onclick="escucharPinyin()">🔊 Escuchar</button>
+        <input id="p-input" placeholder="ni hao  ·  nǐ hǎo" autocomplete="off" spellcheck="false" />
+        <div id="tono-btns" class="tono-btns" aria-label="Vocales con tonos"></div>
+        <button class="btn primary" onclick="comprobarPinyin()">Comprobar ↵</button>
+        <button class="btn ghost" onclick="pistaPinyin()">💡 Pista</button>
+        <div id="p-feedback" class="ch-result"></div>
+        <div class="hint">
+          💡 Sirve con o sin tonos. Usa <code>v</code> en lugar de <code>ü</code> (<code>nv</code> = nǚ). Pulsa <kbd>Enter</kbd> para comprobar.
+        </div>
+      </div>
+      <div class="controls"><button class="btn ghost" onclick="nuevaPinyin()">🔄 Siguiente palabra</button></div>
+    </section>
+
+    <!-- ============ TONOS ============ -->
+    <section id="view-tonos" class="view">
+      <div class="view-head">
+        <div><h2>🔔 Tonos</h2><p class="subtitle">Escucha el carácter y elige su tono. El corazón del chino.</p></div>
+        <button class="btn ghost" onclick="showView('menu')">← Menú</button>
+      </div>
+      <div class="stats">
+        <span class="stat">⭐ Puntos <b id="t-pts">0</b></span>
+        <span class="stat">🔥 Racha <b id="t-streak">0</b></span>
+        <span class="stat">🔔 Ronda <b id="t-n">0</b></span>
+      </div>
+      <div class="repaso-banner hidden">🎯 Modo repaso: <b class="repaso-count"></b> <button class="btn ghost sm" onclick="salirRepaso()">Salir ✕</button></div>
+      <div class="tono-modos" id="tono-modos">
+        <button class="btn ghost sm toggle-on" data-m="palabras" onclick="setTonoModo('palabras')">📖 Palabras</button>
+        <button class="btn ghost sm" data-m="pares" onclick="setTonoModo('pares')">🎧 Pares mínimos</button>
+      </div>
+      <div class="pinyin-box">
+        <div id="t-hanzi" class="pinyin-hanzi">—</div>
+        <div id="t-es" class="pinyin-es">—</div>
+      </div>
+      <div class="listen-hero">
+        <button class="play-btn" onclick="tModo==='pares'?nuevoPar():nuevoTono()" title="Nuevo">▶</button>
+        <button class="btn ghost" onclick="repetirTono()">🔁 Repetir</button>
+        <button class="btn ghost" onclick="escucharTonoLento()">🐢 Lento</button>
+      </div>
+      <div class="tono-opts" id="tono-opts"></div>
+      <div id="t-feedback" class="ch-result"></div>
+    </section>
+
+    <!-- ============ PRONUNCIA ============ -->
+    <section id="view-pronuncia" class="view">
+      <div class="view-head">
+        <div><h2>🎤 Pronuncia</h2><p class="subtitle">Shadowing: escucha el modelo, imítalo y el micro te corrige (Chrome/Edge).</p></div>
+        <button class="btn ghost" onclick="showView('menu')">← Menú</button>
+      </div>
+      <div class="stats">
+        <span class="stat">⭐ Puntos <b id="pr-pts">0</b></span>
+        <span class="stat">🎤 Ronda <b id="pr-n">0</b></span>
+      </div>
+      <div class="pinyin-box">
+        <div id="pr-hanzi" class="pinyin-hanzi">—</div>
+        <div id="pr-py" class="pinyin-es">—</div>
+      </div>
+      <div class="listen-hero">
+        <button class="play-btn" onclick="nuevaPronuncia()" title="Nueva palabra">▶</button>
+        <button class="btn ghost" onclick="if(prActual)speak(prActual.hanzi)">🔁 Modelo</button>
+        <button class="btn ghost" onclick="if(prActual)speak(prActual.hanzi,true)">🐢 Lento</button>
+      </div>
+      <div class="controls">
+        <button class="btn primary" id="btn-micro" onclick="escucharYo()">🎤 Escúchame</button>
+      </div>
+      <div id="pr-oido" class="ch-result"></div>
+      <div id="pr-feedback" class="ch-result"></div>
+      <div class="controls">
+        <span class="subtitle">¿Sin micro o no te reconoce? Autoevalúate:</span><br>
+        <button class="btn success sm" onclick="prAuto(true)">✅ Me salió</button>
+        <button class="btn danger-soft sm" onclick="prAuto(false)">🔁 Aún no</button>
+      </div>
+    </section>
+
+    <!-- ============ FLASHCARDS ============ -->
+    <section id="view-flash" class="view">
+      <div class="view-head">
+        <div><h2>📇 Flashcards</h2><p class="subtitle">Toca la ficha para ver la respuesta y oír su pronunciación.</p></div>
+        <button class="btn ghost" onclick="showView('menu')">← Menú</button>
+      </div>
+      <div class="stats">
+        <span class="stat">🃏 <b id="f-n">0/0</b></span>
+        <span class="stat">👁️ Vistas <b id="f-vistas">0</b></span>
+      </div>
+      <div class="flash-card" id="flash-card" onclick="voltearFlash()" role="button" tabindex="0">
+        <span class="flash-tag">toca para voltear</span>
+        <div id="f-front" class="flash-front">—</div>
+        <div id="f-back" class="flash-back hidden">—</div>
+      </div>
+      <div class="f-prog"><div id="f-prog-fill"></div></div>
+      <div class="controls">
+        <button class="btn ghost" onclick="escucharFlash()">🔊 Escuchar</button>
+        <button class="btn danger-soft" onclick="flashNo()">❌ Repetir luego</button>
+        <button class="btn success" onclick="flashSi()">✅ La sabía · +5 XP</button>
+        <button class="btn ghost" onclick="nuevoMazoFlash()">🔄 Barajar</button>
+        <button class="btn ghost" onclick="mazoDebiles()">🎯 Barajar débiles</button>
+      </div>
+    </section>
+    <!-- ============ CULTURA ============ -->
+    <section id="view-cultura" class="view">
+      <div class="view-head">
+        <div><h2>🏮 Cultura china</h2><p class="subtitle">Toca cada verso para oírlo y ver su traducción. +15 XP por poema leído.</p></div>
+        <button class="btn ghost" onclick="showView('menu')">← Menú</button>
+      </div>
+      <h3 class="cult-h">🖋️ Poemas Tang imprescindibles</h3>
+      <div id="cult-poemas" class="poemas"></div>
+      <h3 class="cult-h">🎎 Fiestas y costumbres</h3>
+      <div id="cult-fiestas" class="cards"></div>
+    </section>
+
+    <!-- ============ CUADERNO ============ -->
+    <section id="view-cuaderno" class="view">
+      <div class="view-head">
+        <div><h2>📔 Mi cuaderno</h2><p class="subtitle">Tu registro personal de aprendizaje: palabra por palabra.</p></div>
+        <button class="btn ghost" onclick="showView('menu')">← Menú</button>
+      </div>
+      <div class="cu-stats" id="cu-stats"></div>
+      <div class="cu-bar-wrap">
+        <div class="cu-bar"><div id="cu-bar-fill"></div></div>
+        <span id="cu-bar-txt" class="subtitle">—</span>
+      </div>
+      <div class="cu-tools">
+        <input id="cu-search" placeholder="Buscar hànzì, pinyin o español…" oninput="cuBusca=this.value;renderCuaderno()" />
+        <div class="cu-filtros" id="cu-filtros">
+          <button class="chip-f active" data-f="todas" onclick="cuSetFiltro('todas')">Todas</button>
+          <button class="chip-f" data-f="debil" onclick="cuSetFiltro('debil')">🎯 Débiles</button>
+          <button class="chip-f" data-f="aprendiendo" onclick="cuSetFiltro('aprendiendo')">📘 Aprendiendo</button>
+          <button class="chip-f" data-f="nueva" onclick="cuSetFiltro('nueva')">⬜ Nuevas</button>
+          <button class="chip-f" data-f="dominada" onclick="cuSetFiltro('dominada')">✅ Dominadas</button>
+        </div>
+      </div>
+      <div id="cu-list" class="cu-list"></div>
+    </section>
+
+    <!-- ============ PROGRESO ============ -->
+    <section id="view-progreso" class="view">
+      <div class="view-head">
+        <div><h2>📊 Mi progreso</h2><p class="subtitle">Repetición inteligente: primero lo que más fallas.</p></div>
+        <button class="btn ghost" onclick="showView('menu')">← Menú</button>
+      </div>
+
+      <div class="pg-grid">
+        <div class="pg-card">
+          <h3>🎯 Meta diaria</h3>
+          <div class="goal-wrap">
+            <svg viewBox="0 0 84 84" class="ring" aria-hidden="true">
+              <circle cx="42" cy="42" r="34" class="ring-bg"></circle>
+              <circle id="pg-ring-fg" cx="42" cy="42" r="34" class="ring-fg"></circle>
+            </svg>
+            <div id="pg-meta-txt" class="goal-txt">—</div>
+          </div>
+        </div>
+        <div class="pg-card">
+          <h3>📅 Últimos 7 días</h3>
+          <div id="pg-week" class="wk-row"></div>
+        </div>
+      </div>
+
+      <div class="pg-card">
+        <h3>🎮 Por juego</h3>
+        <div id="pg-games"></div>
+      </div>
+
+      <div class="pg-card">
+        <h3>🎯 Mis palabras débiles</h3>
+        <div id="pg-weak" class="chips"></div>
+        <div class="controls">
+          <button class="btn" onclick="empezarRepaso('quiz')">Repasar en Quiz</button>
+          <button class="btn" onclick="empezarRepaso('escucha')">Repasar en Escucha</button>
+          <button class="btn" onclick="empezarRepaso('pinyin')">Repasar en Pinyin</button>
+          <button class="btn" onclick="empezarRepaso('tonos')">Repasar en Tonos</button>
+          <button class="btn ghost" onclick="mazoDebiles()">Fichas débiles</button>
+        </div>
+      </div>
+
+      <div class="pg-card">
+        <h3>🏆 Logros</h3>
+        <div id="pg-logros" class="achv-grid"></div>
+      </div>
+
+      <div class="pg-card">
+        <h3>💾 Mis datos</h3>
+        <p class="subtitle" id="pg-backup">Sin respaldo todavía</p>
+        <div class="controls">
+          <button class="btn" onclick="exportarProgreso();renderProgreso()">⬇️ Exportar JSON</button>
+          <button class="btn ghost" onclick="document.getElementById('import-file').click()">⬆️ Importar JSON</button>
+          <input type="file" id="import-file" accept=".json,application/json" class="hidden" onchange="onImportFile(this)" />
+        </div>
+        <div class="controls">
+          <button class="btn danger-soft sm" onclick="resetDato('quiz')">Reset Quiz</button>
+          <button class="btn danger-soft sm" onclick="resetDato('escucha')">Reset Escucha</button>
+          <button class="btn danger-soft sm" onclick="resetDato('pinyin')">Reset Pinyin</button>
+          <button class="btn danger-soft sm" onclick="resetDato('tonos')">Reset Tonos</button>
+          <button class="btn danger-soft sm" onclick="resetDato('mem')">Reset Memorama</button>
+          <button class="btn danger-soft sm" onclick="resetDato('flash')">Reset Fichas</button>
+          <button class="btn danger-soft sm" onclick="resetDato('palabras')">Reset palabras</button>
+          <button class="btn danger-soft sm" onclick="resetDato('cultura')">Reset cultura</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabbar" aria-label="Navegación principal">
+    <button class="tab-btn active" data-v="menu" onclick="showView('menu')"><span>🏠</span>Inicio</button>
+    <button class="tab-btn" data-v="ruta" onclick="showView('ruta')"><span>🛤️</span>Ruta</button>
+    <button class="tab-btn" data-v="quiz" onclick="showView('quiz')"><span>✅</span>Quiz</button>
+    <button class="tab-btn" data-v="cuaderno" onclick="showView('cuaderno')"><span>📔</span>Cuaderno</button>
+    <button class="tab-btn" data-v="progreso" onclick="showView('progreso')"><span>📊</span>Progreso</button>
+  </nav>
+
+  <footer>
+    <span class="footer-zh">学中文，玩得开心</span>
+    <span>NiHao Lab · 80 palabras HSK1+HSK2 · Voz del navegador · Progreso guardado en tu equipo</span>
+  </footer>
+
+  <script src="vocab.js"></script>
+  <script src="cultura.js"></script>
+  <script src="store.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+// ===== Camino estilo Duolingo: unidades ordenadas de fácil a difícil =====
+const UNIDADES = [
+  { id: 'saludos',   emoji: '👋', nombre: 'Saludos',      desc: 'Hola, gracias, yo y tú',   cats: ['saludos', 'pronombres'] },
+  { id: 'numeros',   emoji: '🔢', nombre: 'Números',      desc: 'Del 1 al 10',               cats: ['numeros'] },
+  { id: 'familia',   emoji: '👪', nombre: 'Familia', desc: 'Papá, mamá y amigos',      cats: ['familia'] },
+  { id: 'comida',    emoji: '🍎', nombre: 'Comida',       desc: 'Agua, té y arroz',          cats: ['comida'] },
+  { id: 'escuela',   emoji: '🏫', nombre: 'Escuela',      desc: 'Cole, profes y lugares',    cats: ['escuela', 'lugares'] },
+  { id: 'verbos',    emoji: '⚡', nombre: 'Verbos',       desc: 'Ser, comer, estudiar…',     cats: ['verbos'] },
+  { id: 'describe',  emoji: '🌈', nombre: 'Describe',     desc: 'Grande, hoy, qué…',         cats: ['adjetivos', 'tiempo', 'preguntas', 'general'] },
+  { id: 'hsk2',      emoji: '🚀', nombre: 'HSK2 Plus',    desc: 'El salto al nivel 2',       hsk: 2 },
+];
+function unitWords(id) {
+  const u = UNIDADES.find(x => x.id === id);
+  if (!u) return [];
+  if (u.cats) return VOCAB.filter(w => u.cats.includes(w.cat));
+  if (u.hsk) return VOCAB.filter(w => w.hsk === u.hsk);
+  return [];
+}
+// Lección: 3 niveles por unidad (5/7/9 preguntas, 3 corazones)
+const NIVEL_LEN = [5, 7, 9];
+
+// ===== Pares mínimos de tonos (misma sílaba, 4 tonos) =====
+// Método: entrenar el oído con contrastes mínimos, no con palabras sueltas.
+const PARES_TONO = [
+  { sil: 'ma', opts: [
+    { hz: '妈', py: 'mā', t: 1, es: 'mamá' }, { hz: '麻', py: 'má', t: 2, es: 'cáñamo' },
+    { hz: '马', py: 'mǎ', t: 3, es: 'caballo' }, { hz: '骂', py: 'mà', t: 4, es: 'regañar' } ] },
+  { sil: 'shi', opts: [
+    { hz: '诗', py: 'shī', t: 1, es: 'poema' }, { hz: '十', py: 'shí', t: 2, es: 'diez' },
+    { hz: '史', py: 'shǐ', t: 3, es: 'historia' }, { hz: '是', py: 'shì', t: 4, es: 'ser' } ] },
+  { sil: 'yi', opts: [
+    { hz: '衣', py: 'yī', t: 1, es: 'ropa' }, { hz: '姨', py: 'yí', t: 2, es: 'tía' },
+    { hz: '椅', py: 'yǐ', t: 3, es: 'silla' }, { hz: '意', py: 'yì', t: 4, es: 'significado' } ] },
+  { sil: 'ba', opts: [
+    { hz: '八', py: 'bā', t: 1, es: 'ocho' }, { hz: '拔', py: 'bá', t: 2, es: 'arrancar' },
+    { hz: '把', py: 'bǎ', t: 3, es: 'agarrar' }, { hz: '爸', py: 'bà', t: 4, es: 'papá' } ] },
+  { sil: 'tu', opts: [
+    { hz: '突', py: 'tū', t: 1, es: 'repentino' }, { hz: '图', py: 'tú', t: 2, es: 'mapa' },
+    { hz: '土', py: 'tǔ', t: 3, es: 'tierra' }, { hz: '兔', py: 'tù', t: 4, es: 'conejo' } ] },
+];
+
+// ===== Vocabulario ES -> ZH (HSK1 + HSK2) =====
+// Campos: hanzi, pinyin, es, hsk, cat
+//   rad   → radical / componente clave (método de caracteres)
+//   mnemo → mnemotecnia para recordar el carácter
+//   fr    → frase ejemplo {hz, py, es} (input comprensible en contexto)
+const VOCAB = [
+  // ---- HSK1 (50) ----
+  {hanzi:'一', pinyin:'yī', es:'uno', hsk:1, cat:'numeros', rad:'一', mnemo:'un solo trazo horizontal: el 1'},
+  {hanzi:'二', pinyin:'èr', es:'dos', hsk:1, cat:'numeros', rad:'一', mnemo:'dos trazos: el 2'},
+  {hanzi:'三', pinyin:'sān', es:'tres', hsk:1, cat:'numeros', rad:'一', mnemo:'tres trazos: el 3'},
+  {hanzi:'四', pinyin:'sì', es:'cuatro', hsk:1, cat:'numeros', rad:'囗', mnemo:'un recinto (囗) con patas dentro'},
+  {hanzi:'五', pinyin:'wǔ', es:'cinco', hsk:1, cat:'numeros', rad:'一', mnemo:'trazos cruzados entre dos líneas'},
+  {hanzi:'六', pinyin:'liù', es:'seis', hsk:1, cat:'numeros', rad:'八', mnemo:'una tapa sobre 八 (ocho)'},
+  {hanzi:'七', pinyin:'qī', es:'siete', hsk:1, cat:'numeros', rad:'一', mnemo:'una cruz torcida'},
+  {hanzi:'八', pinyin:'bā', es:'ocho', hsk:1, cat:'numeros', rad:'八', mnemo:'dos trazos que se separan'},
+  {hanzi:'九', pinyin:'jiǔ', es:'nueve', hsk:1, cat:'numeros', rad:'丿', mnemo:'un codo con gancho'},
+  {hanzi:'十', pinyin:'shí', es:'diez', hsk:1, cat:'numeros', rad:'十', mnemo:'una cruz completa: 10'},
+  {hanzi:'你好', pinyin:'nǐ hǎo', es:'hola', hsk:1, cat:'saludos', fr:{hz:'你好！我叫小明。', py:'Nǐ hǎo! Wǒ jiào Xiǎomíng.', es:'¡Hola! Me llamo Xiaoming.'}},
+  {hanzi:'谢谢', pinyin:'xièxie', es:'gracias', hsk:1, cat:'saludos', fr:{hz:'谢谢你的帮助。', py:'Xièxie nǐ de bāngzhù.', es:'Gracias por tu ayuda.'}},
+  {hanzi:'对不起', pinyin:'duìbuqǐ', es:'perdón', hsk:1, cat:'saludos', fr:{hz:'对不起，我迟到了。', py:'Duìbuqǐ, wǒ chídào le.', es:'Perdón, llegué tarde.'}},
+  {hanzi:'再见', pinyin:'zàijiàn', es:'adiós', hsk:1, cat:'saludos', fr:{hz:'明天见，再见！', py:'Míngtiān jiàn, zàijiàn!', es:'¡Hasta mañana, adiós!'}},
+  {hanzi:'请', pinyin:'qǐng', es:'por favor', hsk:1, cat:'saludos', rad:'讠', mnemo:'palabra (讠) + azul: invitar'},
+  {hanzi:'我', pinyin:'wǒ', es:'yo', hsk:1, cat:'pronombres', rad:'戈', mnemo:'una mano que sostiene un arma (戈): yo mismo', fr:{hz:'我是学生。', py:'Wǒ shì xuésheng.', es:'Soy estudiante.'}},
+  {hanzi:'你', pinyin:'nǐ', es:'tú', hsk:1, cat:'pronombres', rad:'亻', mnemo:'persona (亻) + 尔: tú', fr:{hz:'你叫什么名字？', py:'Nǐ jiào shénme míngzi?', es:'¿Cómo te llamas?'}},
+  {hanzi:'他', pinyin:'tā', es:'él', hsk:1, cat:'pronombres', rad:'亻', mnemo:'persona (亻) + 也: él', fr:{hz:'他是我朋友。', py:'Tā shì wǒ péngyou.', es:'Él es mi amigo.'}},
+  {hanzi:'她', pinyin:'tā', es:'ella', hsk:1, cat:'pronombres', rad:'女', mnemo:'mujer (女) + 也: ella', fr:{hz:'她是我妈妈。', py:'Tā shì wǒ māma.', es:'Ella es mi mamá.'}},
+  {hanzi:'我们', pinyin:'wǒmen', es:'nosotros', hsk:1, cat:'pronombres', fr:{hz:'我们是学生。', py:'Wǒmen shì xuésheng.', es:'Somos estudiantes.'}},
+  {hanzi:'爸爸', pinyin:'bàba', es:'papá', hsk:1, cat:'familia', rad:'父', mnemo:'padre (父) + 巴 (sonido bā)', fr:{hz:'爸爸工作忙。', py:'Bàba gōngzuò máng.', es:'Papá está ocupado con el trabajo.'}},
+  {hanzi:'妈妈', pinyin:'māma', es:'mamá', hsk:1, cat:'familia', rad:'女', mnemo:'mujer (女) + 马 (sonido mǎ)', fr:{hz:'妈妈喝茶。', py:'Māma hē chá.', es:'Mamá bebe té.'}},
+  {hanzi:'儿子', pinyin:'érzi', es:'hijo', hsk:1, cat:'familia', rad:'子', mnemo:'子 es niño/hijo'},
+  {hanzi:'女儿', pinyin:'nǚér', es:'hija', hsk:1, cat:'familia', rad:'女', mnemo:'mujer (女) + 儿: hija'},
+  {hanzi:'朋友', pinyin:'péngyou', es:'amigo', hsk:1, cat:'familia', rad:'月', mnemo:'dos lunas (月) juntas: compañeros', fr:{hz:'我有三个朋友。', py:'Wǒ yǒu sān ge péngyou.', es:'Tengo tres amigos.'}},
+  {hanzi:'水', pinyin:'shuǐ', es:'agua', hsk:1, cat:'comida', rad:'水', mnemo:'un chorro con gotas: agua', fr:{hz:'我想喝水。', py:'Wǒ xiǎng hē shuǐ.', es:'Quiero beber agua.'}},
+  {hanzi:'茶', pinyin:'chá', es:'té', hsk:1, cat:'comida', rad:'艹', mnemo:'hierba (艹) sobre un árbol: té', fr:{hz:'中国茶很有名。', py:'Zhōngguó chá hěn yǒumíng.', es:'El té chino es famoso.'}},
+  {hanzi:'米饭', pinyin:'mǐfàn', es:'arroz cocido', hsk:1, cat:'comida', rad:'米', mnemo:'米 es grano de arroz'},
+  {hanzi:'苹果', pinyin:'píngguǒ', es:'manzana', hsk:1, cat:'comida', rad:'艹', mnemo:'hierba (艹) + 果 (fruta)'},
+  {hanzi:'鸡蛋', pinyin:'jīdàn', es:'huevo', hsk:1, cat:'comida', rad:'虫', mnemo:'gallina (鸡) + huevo (蛋)'},
+  {hanzi:'学校', pinyin:'xuéxiào', es:'escuela', hsk:1, cat:'escuela', rad:'子', mnemo:'aprender (学) + escuela (校)', fr:{hz:'学校很大。', py:'Xuéxiào hěn dà.', es:'La escuela es grande.'}},
+  {hanzi:'老师', pinyin:'lǎoshī', es:'profesor', hsk:1, cat:'escuela', rad:'老', mnemo:'viejo (老) + maestro (师): el profe', fr:{hz:'老师很好。', py:'Lǎoshī hěn hǎo.', es:'El profe es muy bueno.'}},
+  {hanzi:'学生', pinyin:'xuésheng', es:'estudiante', hsk:1, cat:'escuela', rad:'子', mnemo:'aprender (学) + vida (生)'},
+  {hanzi:'中国', pinyin:'Zhōngguó', es:'China', hsk:1, cat:'lugares', rad:'囗', mnemo:'recinto (囗) con jade (玉) dentro: el país del medio', fr:{hz:'我去中国。', py:'Wǒ qù Zhōngguó.', es:'Voy a China.'}},
+  {hanzi:'西班牙', pinyin:'Xībānyá', es:'España', hsk:1, cat:'lugares'},
+  {hanzi:'是', pinyin:'shì', es:'ser', hsk:1, cat:'verbos', rad:'日', mnemo:'sol (日) + correcto: ser/afirmar'},
+  {hanzi:'有', pinyin:'yǒu', es:'tener', hsk:1, cat:'verbos', rad:'月', mnemo:'mano (𠂇) sobre carne (月): poseer'},
+  {hanzi:'爱', pinyin:'ài', es:'amar', hsk:1, cat:'verbos', rad:'爫', mnemo:'simplificado: amar sin corazón (el tradicional 愛 lo lleva)', fr:{hz:'我爱你。', py:'Wǒ ài nǐ.', es:'Te quiero.'}},
+  {hanzi:'吃', pinyin:'chī', es:'comer', hsk:1, cat:'verbos', rad:'口', mnemo:'boca (口) que pide (乞): comer', fr:{hz:'我吃米饭。', py:'Wǒ chī mǐfàn.', es:'Como arroz.'}},
+  {hanzi:'喝', pinyin:'hē', es:'beber', hsk:1, cat:'verbos', rad:'口', mnemo:'boca (口) + 曷: beber', fr:{hz:'他喝牛奶。', py:'Tā hē niúnǎi.', es:'Él bebe leche.'}},
+  {hanzi:'好', pinyin:'hǎo', es:'bueno', hsk:1, cat:'adjetivos', rad:'女', mnemo:'mujer (女) + niño (子) = bueno'},
+  {hanzi:'大', pinyin:'dà', es:'grande', hsk:1, cat:'adjetivos', rad:'大', mnemo:'persona (人) con brazos abiertos: grande'},
+  {hanzi:'小', pinyin:'xiǎo', es:'pequeño', hsk:1, cat:'adjetivos', rad:'小', mnemo:'algo partido en dos mitades: pequeño'},
+  {hanzi:'今天', pinyin:'jīntiān', es:'hoy', hsk:1, cat:'tiempo', rad:'人', mnemo:'ahora (今) + día (天)'},
+  {hanzi:'明天', pinyin:'míngtiān', es:'mañana', hsk:1, cat:'tiempo', rad:'日', mnemo:'sol (日) + luna (月) = luminoso: mañana'},
+  {hanzi:'什么', pinyin:'shénme', es:'qué', hsk:1, cat:'preguntas', rad:'亻', mnemo:'persona (亻) + 十 + 么'},
+  {hanzi:'谁', pinyin:'shéi', es:'quién', hsk:1, cat:'preguntas', rad:'讠', mnemo:'palabra (讠) + 隹 (pájaro): quién'},
+  {hanzi:'这', pinyin:'zhè', es:'esto', hsk:1, cat:'preguntas', rad:'辶', mnemo:'caminar (辶) + 文: esto'},
+  {hanzi:'那', pinyin:'nà', es:'eso', hsk:1, cat:'preguntas', rad:'阝', mnemo:'阝 + 冉: eso (lejano)'},
+  {hanzi:'人', pinyin:'rén', es:'persona', hsk:1, cat:'general', rad:'人', mnemo:'una persona de perfil caminando'},
+  // ---- HSK2 (30) ----
+  {hanzi:'学习', pinyin:'xuéxí', es:'estudiar', hsk:2, cat:'verbos', rad:'子', mnemo:'aprender (学) + practicar (习)', fr:{hz:'我学习中文。', py:'Wǒ xuéxí Zhōngwén.', es:'Estudio chino.'}},
+  {hanzi:'工作', pinyin:'gōngzuò', es:'trabajar', hsk:2, cat:'verbos', fr:{hz:'她在医院工作。', py:'Tā zài yīyuàn gōngzuò.', es:'Ella trabaja en el hospital.'}},
+  {hanzi:'考试', pinyin:'kǎoshì', es:'examen', hsk:2, cat:'escuela', rad:'耂', mnemo:'examinar (考) + probar (试)'},
+  {hanzi:'慢', pinyin:'màn', es:'lento', hsk:2, cat:'adjetivos', rad:'忄', mnemo:'corazón (忄) + 曼: lento'},
+  {hanzi:'快', pinyin:'kuài', es:'rápido', hsk:2, cat:'adjetivos', rad:'忄', mnemo:'corazón (忄) + 夬: rápido'},
+  {hanzi:'漂亮', pinyin:'piàoliang', es:'bonito', hsk:2, cat:'adjetivos', rad:'氵', mnemo:'agua (氵) + 亮 (brillante): hermoso'},
+  {hanzi:'高兴', pinyin:'gāoxìng', es:'contento', hsk:2, cat:'adjetivos', fr:{hz:'我很高兴。', py:'Wǒ hěn gāoxìng.', es:'Estoy muy contento.'}},
+  {hanzi:'便宜', pinyin:'piányi', es:'barato', hsk:2, cat:'adjetivos', rad:'亻', mnemo:'persona (亻) + 更: barato'},
+  {hanzi:'贵', pinyin:'guì', es:'caro', hsk:2, cat:'adjetivos', rad:'贝', mnemo:'贝 (concha=dinero) abajo: caro'},
+  {hanzi:'医院', pinyin:'yīyuàn', es:'hospital', hsk:2, cat:'lugares', rad:'疒', mnemo:'enfermedad (疒) + patio (院)'},
+  {hanzi:'火车', pinyin:'huǒchē', es:'tren', hsk:2, cat:'lugares', rad:'火', mnemo:'fuego (火) + carro (车): tren'},
+  {hanzi:'飞机', pinyin:'fēijī', es:'avión', hsk:2, cat:'lugares', rad:'飞', mnemo:'volar (飞) + máquina (机): avión'},
+  {hanzi:'运动', pinyin:'yùndòng', es:'deporte', hsk:2, cat:'ocio', rad:'辶', mnemo:'moverse (运) + fuerza (动)'},
+  {hanzi:'电影', pinyin:'diànyǐng', es:'película', hsk:2, cat:'ocio', rad:'雨', mnemo:'electricidad (电) + sombra (影)', fr:{hz:'我们看电影吧。', py:'Wǒmen kàn diànyǐng ba.', es:'Veamos una película.'}},
+  {hanzi:'音乐', pinyin:'yīnyuè', es:'música', hsk:2, cat:'ocio', rad:'音', mnemo:'sonido (音) + 乐 (alegre): música'},
+  {hanzi:'电脑', pinyin:'diànnǎo', es:'ordenador', hsk:2, cat:'objetos', rad:'电', mnemo:'electricidad (电) + cerebro (脑)'},
+  {hanzi:'手机', pinyin:'shǒujī', es:'móvil', hsk:2, cat:'objetos', rad:'手', mnemo:'mano (手) + máquina (机): móvil', fr:{hz:'我手机没电了。', py:'Wǒ shǒujī méi diàn le.', es:'Mi móvil se quedó sin batería.'}},
+  {hanzi:'衣服', pinyin:'yīfu', es:'ropa', hsk:2, cat:'objetos', rad:'衣', mnemo:'衣 es ropa; 服 = vestir'},
+  {hanzi:'房间', pinyin:'fángjiān', es:'habitación', hsk:2, cat:'lugares', rad:'户', mnemo:'puerta (户) + 间 (espacio)'},
+  {hanzi:'机场', pinyin:'jīchǎng', es:'aeropuerto', hsk:2, cat:'lugares', rad:'木', mnemo:'máquina (机) + campo (场)'},
+  {hanzi:'帮助', pinyin:'bāngzhù', es:'ayudar', hsk:2, cat:'verbos', fr:{hz:'我帮助你。', py:'Wǒ bāngzhù nǐ.', es:'Te ayudo.'}},
+  {hanzi:'准备', pinyin:'zhǔnbèi', es:'preparar', hsk:2, cat:'verbos', rad:'冫', mnemo:'冫 + 隹 + 备: preparar'},
+  {hanzi:'觉得', pinyin:'juéde', es:'opinar', hsk:2, cat:'verbos', rad:'见', mnemo:'sentir (觉) + 得'},
+  {hanzi:'知道', pinyin:'zhīdào', es:'saber', hsk:2, cat:'verbos', rad:'矢', mnemo:'flecha (矢) + camino (道): saber', fr:{hz:'我知道了。', py:'Wǒ zhīdào le.', es:'Entendido, ya lo sé.'}},
+  {hanzi:'希望', pinyin:'xīwàng', es:'desear', hsk:2, cat:'verbos', fr:{hz:'我希望去中国。', py:'Wǒ xīwàng qù Zhōngguó.', es:'Espero ir a China.'}},
+  {hanzi:'笑', pinyin:'xiào', es:'reír', hsk:2, cat:'verbos', rad:'竹', mnemo:'bambú (竹) + 夭: reír'},
+  {hanzi:'哭', pinyin:'kū', es:'llorar', hsk:2, cat:'verbos', rad:'口', mnemo:'dos bocas (口口) + lágrimas: llorar'},
+  {hanzi:'远', pinyin:'yuǎn', es:'lejos', hsk:2, cat:'adjetivos', rad:'辶', mnemo:'caminar (辶) + 元: lejos'},
+  {hanzi:'近', pinyin:'jìn', es:'cerca', hsk:2, cat:'adjetivos', rad:'辶', mnemo:'caminar (辶) + 斤: cerca'},
+  {hanzi:'忙', pinyin:'máng', es:'ocupado', hsk:2, cat:'adjetivos', rad:'忄', mnemo:'corazón (忄) + 亡 (muerto): ocupadísimo'},
+];
