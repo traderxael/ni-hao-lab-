@@ -61,6 +61,7 @@
       <button onclick="showView('pinyin')" class="nav-btn" id="btn-pinyin"><span>⌨️</span>Pinyin</button>
       <button onclick="showView('tonos')" class="nav-btn" id="btn-tonos"><span>🔔</span>Tonos</button>
       <button onclick="showView('pronuncia')" class="nav-btn" id="btn-pronuncia"><span>🎤</span>Pronuncia</button>
+      <button onclick="showView('escribe')" class="nav-btn" id="btn-escribe"><span>✍️</span>Escribe</button>
       <button onclick="showView('flash')" class="nav-btn" id="btn-flash"><span>📇</span>Fichas</button>
       <button onclick="showView('cultura')" class="nav-btn" id="btn-cultura"><span>🏮</span>Cultura</button>
       <button onclick="showView('cuaderno')" class="nav-btn" id="btn-cuaderno"><span>📔</span>Cuaderno</button>
@@ -90,6 +91,12 @@
           <span class="chip-count" id="conteo">80 palabras</span>
           <span class="chip-count due-chip" id="srs-due">✅ Repaso al día</span>
         </div>
+      </div>
+
+      <div class="daily-cta" onclick="empezarSesion()" role="button" tabindex="0">
+        <span class="daily-emoji">🎯</span>
+        <div><b>Sesión diaria</b><small id="daily-due">—</small></div>
+        <i>→</i>
       </div>
 
       <details class="metodo">
@@ -160,6 +167,14 @@
           <span class="card-cta">Hablar <i>→</i></span>
         </article>
 
+        <article class="card" style="--c1:#0ea5e9;--c2:#7dd3fc" onclick="showView('escribe')">
+          <div class="card-emoji">✍️</div>
+          <h3>Escribe</h3>
+          <p>Traza el carácter sobre la guía: se puntúa tu tinta.</p>
+          <div class="record">🏆 <span id="record-escribe">0 pts</span></div>
+          <span class="card-cta">Trazar <i>→</i></span>
+        </article>
+
         <article class="card" style="--c1:#d63031;--c2:#ff7675" onclick="showView('flash')">
           <div class="card-emoji">📇</div>
           <h3>Flashcards</h3>
@@ -209,8 +224,12 @@
       <div id="lec-title" class="lec-title">—</div>
       <div id="lec-q" class="quiz-q">—</div>
       <div id="lec-play" class="listen-hero hidden"><button class="play-btn" title="Escuchar">▶</button></div>
+      <div id="lec-input-wrap" class="lec-input hidden">
+        <input id="lec-input" autocomplete="off" spellcheck="false" placeholder="escribe el pinyin…" />
+        <button class="btn primary" onclick="evaluarLecPinyin()">Comprobar ↵</button>
+      </div>
       <div id="lec-opts" class="quiz-opts"></div>
-      <div id="lec-feedback" class="ch-result"></div>
+      <div id="lec-feedback" class="ch-result" aria-live="polite"></div>
     </section>
 
     <!-- ============ MEMORAMA ============ -->
@@ -362,6 +381,26 @@
       </div>
     </section>
 
+    <!-- ============ ESCRIBE ============ -->
+    <section id="view-escribe" class="view">
+      <div class="view-head">
+        <div><h2>✍️ Escribe</h2><p class="subtitle">Traza el carácter sobre la guía gris. Se mide cuánta tinta cubres.</p></div>
+        <button class="btn ghost" onclick="showView('menu')">← Menú</button>
+      </div>
+      <div class="es-box">
+        <div id="es-hanzi" class="pinyin-hanzi">—</div>
+        <div id="es-info" class="pinyin-es">—</div>
+        <canvas id="es-canvas" class="es-canvas" aria-label="Lienzo para trazar el carácter"
+          onpointerdown="esDown(event)" onpointermove="esMove(event)" onpointerup="esUp()" onpointerleave="esUp()"></canvas>
+        <div class="controls">
+          <button class="btn ghost" onclick="limpiarLienzo()">🧽 Limpiar</button>
+          <button class="btn primary" onclick="comprobarEscribe()">✅ Comprobar trazo</button>
+          <button class="btn ghost" onclick="nuevaEscribe()">▶ Otro carácter</button>
+        </div>
+        <div id="es-score" class="ch-result" aria-live="polite"></div>
+      </div>
+    </section>
+
     <!-- ============ FLASHCARDS ============ -->
     <section id="view-flash" class="view">
       <div class="view-head">
@@ -432,13 +471,21 @@
       <div class="pg-grid">
         <div class="pg-card">
           <h3>🎯 Meta diaria</h3>
-          <div class="goal-wrap">
-            <svg viewBox="0 0 84 84" class="ring" aria-hidden="true">
-              <circle cx="42" cy="42" r="34" class="ring-bg"></circle>
-              <circle id="pg-ring-fg" cx="42" cy="42" r="34" class="ring-fg"></circle>
-            </svg>
+        <div class="goal-wrap">
+          <svg viewBox="0 0 84 84" class="ring" aria-hidden="true">
+            <circle cx="42" cy="42" r="34" class="ring-bg"></circle>
+            <circle id="pg-ring-fg" cx="42" cy="42" r="34" class="ring-fg"></circle>
+          </svg>
+          <div>
             <div id="pg-meta-txt" class="goal-txt">—</div>
+            <div class="goal-set" id="goal-set">
+              <button class="chip-f" data-g="20" onclick="setGoal(20)">20</button>
+              <button class="chip-f" data-g="50" onclick="setGoal(50)">50</button>
+              <button class="chip-f" data-g="100" onclick="setGoal(100)">100</button>
+              <span class="subtitle">XP/día</span>
+            </div>
           </div>
+        </div>
         </div>
         <div class="pg-card">
           <h3>📅 Últimos 7 días</h3>
@@ -481,6 +528,8 @@
           <button class="btn danger-soft sm" onclick="resetDato('escucha')">Reset Escucha</button>
           <button class="btn danger-soft sm" onclick="resetDato('pinyin')">Reset Pinyin</button>
           <button class="btn danger-soft sm" onclick="resetDato('tonos')">Reset Tonos</button>
+          <button class="btn danger-soft sm" onclick="resetDato('pronuncia')">Reset Pronuncia</button>
+          <button class="btn danger-soft sm" onclick="resetDato('escribe')">Reset Escribe</button>
           <button class="btn danger-soft sm" onclick="resetDato('mem')">Reset Memorama</button>
           <button class="btn danger-soft sm" onclick="resetDato('flash')">Reset Fichas</button>
           <button class="btn danger-soft sm" onclick="resetDato('palabras')">Reset palabras</button>
@@ -502,6 +551,19 @@
     <span class="footer-zh">学中文，玩得开心</span>
     <span>NiHao Lab · 80 palabras HSK1+HSK2 · Voz del navegador · Progreso guardado en tu equipo</span>
   </footer>
+
+  <div id="onboard" class="onboard hidden" role="dialog" aria-modal="true" aria-labelledby="ob-t">
+    <div class="ob-card">
+      <div class="ob-emoji" id="ob-emoji">🐼</div>
+      <h2 id="ob-t">—</h2>
+      <p id="ob-p">—</p>
+      <div class="ob-dots" id="ob-dots"></div>
+      <div class="controls">
+        <button class="btn ghost" onclick="cerrarOnboard()">Saltar</button>
+        <button class="btn" id="ob-next" onclick="sigOnboard()">Siguiente →</button>
+      </div>
+    </div>
+  </div>
 
   <script src="vocab.js"></script>
   <script src="cultura.js"></script>

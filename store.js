@@ -21,6 +21,7 @@ function defaultStore() {
       pinyin:  { best: 0, played: 0, ok: 0 },
       tonos:   { best: 0, played: 0, ok: 0 },
       pronuncia: { best: 0, played: 0, ok: 0 },
+      escribe: { best: 0, played: 0, ok: 0 },
       mem:     { best: {}, wins: 0 },
       flash:   { vistas: 0 }
     },
@@ -209,6 +210,7 @@ const LOGROS = [
   { id: 'unidad1',     emoji: '👑', nombre: 'Unidad top', desc: 'Termina una unidad entera' },
   { id: 'poeta',       emoji: '🖋️', nombre: 'Poeta', desc: 'Lee 3 poemas clásicos' },
   { id: 'voz',         emoji: '🎤', nombre: 'Buena voz', desc: 'Acierta 3 pronunciaciones con el micro' },
+  { id: 'trazo',       emoji: '✍️', nombre: 'Calígrafo', desc: 'Completa 3 trazados con ≥60% de cobertura' },
 ];
 // Devuelve true si es nuevo desbloqueo
 function desbloquear(id) {
