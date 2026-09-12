@@ -1,0 +1,16 @@
+{
+  "name": "nihao-lab",
+  "version": "2.0.0",
+  "description": "App web para aprender chino mandarín (HSK1 + HSK2, 150 palabras) jugando. PWA offline, SRS Leitner, 8 juegos, cultura y cuaderno personal.",
+  "scripts": {
+    "login": "vercel login",
+    "deploy": "vercel deploy --prod --yes",
+    "dev": "vercel dev"
+  },
+  "keywords": ["chino", "hsk", "aprender", "pwa", "flashcards"],
+  "author": "traderxael",
+  "license": "MIT",
+  "devDependencies": {
+    "vercel": "^59.16.0"
+  }
+}

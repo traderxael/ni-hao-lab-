@@ -4,4 +4,6 @@
 evo-bots/
 cohere_video/
 cohere_*
+node_modules/
+package-lock.json
 

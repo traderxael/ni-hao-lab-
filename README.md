@@ -1,6 +1,6 @@
 # 🐼 NiHao Lab — Aprende Chino desde Español
 
-App web para aprender chino mandarín (**HSK1 + HSK2**, 80 palabras) jugando. Sin build, sin backend: HTML + CSS + JS puros. Instalable como PWA y funciona **sin internet** tras la primera visita.
+App web para aprender chino mandarín (**HSK1 + HSK2**, 150 palabras) jugando. Sin build, sin backend: HTML + CSS + JS puros. Instalable como PWA y funciona **sin internet** tras la primera visita.
 
 🌐 **Demo:** https://temporary-express-antimony-odu2zbz.vercel.app
 
