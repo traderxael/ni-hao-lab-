@@ -67,6 +67,7 @@ function registrarVisita() {
   }
   if (S.racha >= 3) maybeAchv('racha3');
   if (S.racha >= 7) maybeAchv('racha7');
+  if (S.racha >= 30) maybeAchv('racha30');
 }
 function addXP(n) {
   let ganancia = n;

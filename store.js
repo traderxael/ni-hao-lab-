@@ -206,6 +206,7 @@ const LOGROS = [
   { id: 'quinientos',  emoji: '🚀', nombre: 'Despegue', desc: 'Acumula 500 XP totales' },
   { id: 'racha3',      emoji: '🔥', nombre: 'Constancia x3', desc: 'Practica 3 días seguidos' },
   { id: 'racha7',      emoji: '🏮', nombre: 'Semana china', desc: 'Practica 7 días seguidos' },
+  { id: 'racha30',     emoji: '🐉', nombre: 'Mes chino', desc: 'Practica 30 días seguidos' },
   { id: 'quiz5',       emoji: '⚡', nombre: 'En racha', desc: '5 aciertos seguidos en Quiz' },
   { id: 'mem_win',     emoji: '🧩', nombre: 'Memoria total', desc: 'Completa un Memorama' },
   { id: 'lector25',    emoji: '📚', nombre: 'Lector', desc: 'Repasa 25 flashcards' },
