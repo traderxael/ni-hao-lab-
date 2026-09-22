@@ -1,0 +1,6 @@
+{
+  "name": "NiHao Lab",
+  "description": "Aprende chino mandarín (HSK1+HSK2) con juegos, pronunciación, trazos y cultura",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
