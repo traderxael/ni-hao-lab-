@@ -7,3 +7,16 @@ cohere_*
 node_modules/
 package-lock.json
 
+
+# Gradle / Android (cache de build: no va al repo)
+.gradle/
+build/
+local.properties
+*.apk
+*.aab
+.kotlin/
+captures/
+
+# Sistema
+.DS_Store
+Thumbs.db
