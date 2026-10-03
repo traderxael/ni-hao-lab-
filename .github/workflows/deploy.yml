@@ -1,3 +1,16 @@
+# DESHABILITADO 2026-10-02 por auditoria de CI.
+#
+# Motivo: este workflow pide tres secrets (VERCEL_TOKEN, VERCEL_ORG_ID,
+# VERCEL_PROJECT_ID) que nunca se configuraron, asi que fallaba en CADA
+# push con: Error: Input required and not supplied: vercel-token
+#
+# Ademas es redundante: el proyecto Vercel 'ni-hao-lab' ya esta conectado
+# al repo y despliega solo en cada push a main (verificado en produccion:
+# https://ni-hao-lab.vercel.app responde 200).
+#
+# Si alguna vez quieres desplegar desde Actions en vez de desde Vercel,
+# configura los 3 secrets y quita este encabezado.
+# ---------------------------------------------------------------------
 # Auto-deploy a Vercel en cada push a main.
 # Requiere 3 secrets en GitHub (repo → Settings → Secrets → Actions):
 #   VERCEL_TOKEN      → vercel.com/account/tokens (Create)
