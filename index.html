@@ -6,6 +6,7 @@
   <title>NiHao Lab — Aprende Chino desde Español</title>
   <meta name="description" content="Aprende chino mandarín (HSK1+HSK2) con 5 minijuegos. Funciona sin internet." />
   <meta name="theme-color" content="#d7373f" />
+  <meta name="application-name" content="NiHao Lab" />
   <link rel="manifest" href="manifest.webmanifest" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -32,6 +33,7 @@
         </div>
       </div>
       <div class="header-actions">
+        <button class="btn ghost sm install-app" id="btn-instalar" type="button" onclick="instalarPwa()">📲 Instalar</button>
         <button class="icon-btn" id="btn-sonido" onclick="toggleSonido()" title="Activar/silenciar voz" aria-label="Sonido">🔊</button>
         <button class="icon-btn" id="btn-tema" onclick="toggleTema()" title="Cambiar tema" aria-label="Tema">🌙</button>
       </div>
@@ -415,6 +417,16 @@
           <button class="btn sm es-mode" id="es-modo-memoria" type="button" aria-pressed="false" onclick="setEsModo('memoria')">Escribe de memoria</button>
         </div>
         <p id="es-instruccion" class="es-instruccion" aria-live="polite">Sigue la forma gris con el dedo o el mouse.</p>
+        <div class="stroke-learning">
+          <div class="stroke-learning-copy"><h3>Aprende el orden de los trazos</h3><p>Primero mira la animación y luego dibuja cada trazo en orden.</p></div>
+          <div id="stroke-writer" class="stroke-writer" role="img" aria-label="Guía animada de trazos del carácter"></div>
+          <div class="controls stroke-controls">
+            <button class="btn ghost sm" id="stroke-animate" type="button" onclick="reproducirTrazos()" disabled>▶ Ver trazos</button>
+            <button class="btn primary sm" id="stroke-quiz" type="button" onclick="empezarQuizTrazos()" disabled>✍️ Practicar orden</button>
+          </div>
+          <p id="stroke-status" class="stroke-status" aria-live="polite">Cargando guía de trazos…</p>
+        </div>
+        <h3 class="es-dibujo-title">Ahora practica la forma</h3>
         <div id="es-hanzi" class="pinyin-hanzi">—</div>
         <div id="es-info" class="pinyin-es">—</div>
         <canvas id="es-canvas" class="es-canvas" aria-label="Lienzo para escribir el carácter chino"
@@ -608,5 +620,13 @@
   <script src="cultura.js"></script>
   <script src="store.js"></script>
   <script src="app.js"></script>
+  <script async crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js" onload="if (esActual) cargarPracticaTrazos(esActual.hanzi)"></script>
+  <dialog id="install-help" class="install-help" aria-labelledby="install-help-title">
+    <form method="dialog"><button class="icon-btn install-close" aria-label="Cerrar">×</button></form>
+    <div class="install-help-icon" aria-hidden="true">📲</div>
+    <h2 id="install-help-title">Instala NiHao Lab</h2>
+    <p id="install-help-copy">Añádela a tu pantalla de inicio para practicar chino como una app.</p>
+    <button class="btn primary" type="button" onclick="document.getElementById('install-help').close()">Entendido</button>
+  </dialog>
 </body>
 </html>
