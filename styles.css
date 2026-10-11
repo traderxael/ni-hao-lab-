@@ -165,36 +165,6 @@ html[data-theme="dark"] .chip-count { color: #101113; }
 .card:hover .card-cta i { transform: translateX(4px); }
 .menu-foot { text-align: center; margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--line); }
 
-/* ============ PLAN DIARIO ============ */
-.daily-cta {
-  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 18px;
-  position: relative; overflow: hidden; margin: 0 0 18px; padding: 22px 24px;
-  border: 1px solid color-mix(in srgb, var(--sello) 20%, var(--line)); border-radius: var(--r);
-  background: linear-gradient(115deg, color-mix(in srgb, var(--sello) 8%, var(--surface)), var(--surface) 64%);
-  box-shadow: var(--shadow);
-}
-.daily-emoji {
-  width: 58px; height: 58px; display: grid; place-items: center; border-radius: 18px;
-  background: color-mix(in srgb, var(--sello) 12%, var(--surface)); font-size: 1.8rem;
-}
-.daily-copy { min-width: 0; }
-.daily-kicker { color: var(--sello); font-size: .67rem; font-weight: 800; letter-spacing: .12em; }
-.daily-copy h3 { margin: 2px 0 1px; font-size: 1.05rem; font-weight: 800; }
-.daily-copy p { color: var(--ink-2); font-size: .82rem; }
-.daily-progress { height: 8px; overflow: hidden; margin-top: 12px; border-radius: 99px; background: var(--surface-2); }
-.daily-progress span { display: block; width: 0%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--sello), var(--oro)); transition: width .55s var(--ease); }
-.daily-progress-meta { display: flex; justify-content: space-between; gap: 12px; margin-top: 5px; color: var(--ink-2); font-size: .72rem; font-weight: 700; }
-.daily-start {
-  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-  min-height: 46px; padding: 0 18px; border: 0; border-radius: 999px;
-  background: var(--sello); color: #fff; font: 800 .85rem 'Manrope', sans-serif;
-  box-shadow: 0 5px 16px color-mix(in srgb, var(--sello) 22%, transparent);
-  transition: transform .2s var(--ease), box-shadow .2s var(--ease);
-}
-.daily-start:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
-.daily-start span { font-size: 1.1rem; transition: transform .2s var(--ease); }
-.daily-start:hover span { transform: translateX(3px); }
-
 /* ============ MEMORAMA ============ */
 .mem-levels { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 14px; }
 .mem-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
@@ -490,6 +460,16 @@ html[data-theme="dark"] .daily-cta { color: #101113; }
   touch-action: none; cursor: crosshair; max-width: 100%;
 }
 
+
+/* ============ PRACTICA DE HANZI ============ */
+.es-hanzi.es-masked { visibility: hidden; }
+
+.es-modes { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin: 0 0 8px; }
+.es-mode { border-color: var(--line); background: var(--surface-2); color: var(--ink-2); box-shadow: none; }
+.es-mode.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.es-instruccion { min-height: 1.5em; color: var(--ink-2); font-size: .85rem; margin: 0 0 8px; }
+.es-canvas { width: min(300px, calc(100vw - 72px)) !important; height: auto !important; aspect-ratio: 1; }
+
 /* ============ input lección ============ */
 .lec-input { display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap; margin: 10px 0; }
 .lec-input input {
@@ -540,6 +520,44 @@ html[data-theme="dark"] .daily-cta { color: #101113; }
   .daily-start { grid-column: 1 / -1; width: 100%; }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .daily-progress span, .daily-start, .daily-start span { transition: none; }
+}
+
+
+/* ============ PLAN DIARIO ============ */
+.daily-cta {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 18px;
+  position: relative; overflow: hidden; margin: 0 0 18px; padding: 22px 24px;
+  border: 1px solid color-mix(in srgb, var(--sello) 20%, var(--line)); border-radius: var(--r);
+  background: linear-gradient(115deg, color-mix(in srgb, var(--sello) 8%, var(--surface)), var(--surface) 64%);
+  box-shadow: var(--shadow);
+}
+.daily-emoji {
+  width: 58px; height: 58px; display: grid; place-items: center; border-radius: 18px;
+  background: color-mix(in srgb, var(--sello) 12%, var(--surface)); font-size: 1.8rem;
+}
+.daily-copy { min-width: 0; }
+.daily-kicker { color: var(--sello); font-size: .67rem; font-weight: 800; letter-spacing: .12em; }
+.daily-copy h3 { margin: 2px 0 1px; font-size: 1.05rem; font-weight: 800; }
+.daily-copy p { color: var(--ink-2); font-size: .82rem; }
+.daily-progress { height: 8px; overflow: hidden; margin-top: 12px; border-radius: 99px; background: var(--surface-2); }
+.daily-progress span { display: block; width: 0%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--sello), var(--oro)); transition: width .55s var(--ease); }
+.daily-progress-meta { display: flex; justify-content: space-between; gap: 12px; margin-top: 5px; color: var(--ink-2); font-size: .72rem; font-weight: 700; }
+.daily-start {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 46px; padding: 0 18px; border: 0; border-radius: 999px;
+  background: var(--sello); color: #fff; font: 800 .85rem 'Manrope', sans-serif;
+  box-shadow: 0 5px 16px color-mix(in srgb, var(--sello) 22%, transparent);
+  transition: transform .2s var(--ease), box-shadow .2s var(--ease);
+}
+.daily-start:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.daily-start span { font-size: 1.1rem; transition: transform .2s var(--ease); }
+.daily-start:hover span { transform: translateX(3px); }
+
+
+html[data-theme="dark"] .daily-cta { color: var(--ink); }
+.daily-cta:hover { transform: none; }
 @media (prefers-reduced-motion: reduce) {
   .daily-progress span, .daily-start, .daily-start span { transition: none; }
 }

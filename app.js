@@ -780,13 +780,56 @@ function desbloquearVoz() {
 document.addEventListener('pointerdown', desbloquearVoz);
 // ================= ESCRIBE (trazado con score por cobertura) =================
 let esActual = null, esPts = [], esInk = [], esTrazando = false, esPtsSesion = 0;
+let esModoMemoria = false, esMostrarGuia = false, esPistaTimer = null;
 const ES_SIZE = 300, ES_RADIO = 14, ES_MIN = 60;
+function pintarReferenciaEscribe() {
+  const ref = document.getElementById('es-hanzi');
+  const oculta = esModoMemoria && !esMostrarGuia;
+  ref.classList.toggle('es-masked', oculta);
+  ref.setAttribute('aria-hidden', String(oculta));
+}
+function setEsModo(modo) {
+  esModoMemoria = modo === 'memoria';
+  esMostrarGuia = false;
+  clearTimeout(esPistaTimer);
+  const guia = document.getElementById('es-modo-guia');
+  const memoria = document.getElementById('es-modo-memoria');
+  const pista = document.getElementById('es-pista');
+  guia.classList.toggle('active', !esModoMemoria);
+  guia.setAttribute('aria-pressed', String(!esModoMemoria));
+  memoria.classList.toggle('active', esModoMemoria);
+  memoria.setAttribute('aria-pressed', String(esModoMemoria));
+  pista.classList.toggle('hidden', !esModoMemoria);
+  pintarReferenciaEscribe();
+  document.getElementById('es-instruccion').textContent = esModoMemoria
+    ? 'Escribe el carácter sin verlo. Comprueba tu trazo para descubrir la respuesta.'
+    : 'Sigue la forma gris con el dedo o el mouse.';
+  if (esActual) redrawTrazos();
+}
+function mostrarPistaEscribe() {
+  if (!esModoMemoria || !esActual) return;
+  clearTimeout(esPistaTimer);
+  esMostrarGuia = true;
+  pintarReferenciaEscribe();
+  redrawTrazos();
+  const b = document.getElementById('es-pista');
+  b.textContent = '👁️ Pista visible…';
+  esPistaTimer = setTimeout(() => {
+    esMostrarGuia = false;
+    pintarReferenciaEscribe();
+    b.textContent = '👁️ Ver pista';
+    redrawTrazos();
+  }, 1500);
+}
 function nuevaEscribe() {
   const unos = pool().filter(w => [...w.hanzi].length === 1);
   esActual = rnd(unos.length ? unos : pool());
   esPts = [];
+  esMostrarGuia = false;
+  clearTimeout(esPistaTimer);
   document.getElementById('es-hanzi').textContent = esActual.hanzi;
-  document.getElementById('es-info').textContent = esActual.pinyin + ' · ' + esActual.es + ' — repásalo con el dedo o el mouse';
+  pintarReferenciaEscribe();
+  document.getElementById('es-info').textContent = esActual.pinyin + ' · ' + esActual.es + ' — practica sus trazos';
   document.getElementById('es-score').textContent = '';
   prepararLienzo();
 }
@@ -800,8 +843,6 @@ function prepararLienzo() {
   g.clearRect(0, 0, ES_SIZE, ES_SIZE);
   g.font = '500 ' + (ES_SIZE * 0.78) + 'px "Noto Sans SC", sans-serif';
   g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.fillStyle = 'rgba(128,138,155,.28)';
-  g.fillText(esActual.hanzi, ES_SIZE / 2, ES_SIZE / 2 + ES_SIZE * 0.03);
   // muestras de tinta en canvas aparte
   const off = document.createElement('canvas');
   off.width = ES_SIZE; off.height = ES_SIZE;
@@ -825,8 +866,19 @@ function redrawTrazos() {
   g.clearRect(0, 0, ES_SIZE, ES_SIZE);
   g.font = '500 ' + ES_SIZE * 0.78 + 'px "Noto Sans SC", sans-serif';
   g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.fillStyle = 'rgba(128,138,155,.28)';
-  g.fillText(esActual.hanzi, ES_SIZE / 2, ES_SIZE / 2 + ES_SIZE * 0.03);
+  if (!esModoMemoria || esMostrarGuia) {
+    g.fillStyle = 'rgba(128,138,155,.34)';
+    g.fillText(esActual.hanzi, ES_SIZE / 2, ES_SIZE / 2 + ES_SIZE * 0.03);
+  } else {
+    g.strokeStyle = 'rgba(128,138,155,.28)';
+    g.lineWidth = 1;
+    g.setLineDash([4, 6]);
+    g.beginPath();
+    g.moveTo(ES_SIZE / 2, 24); g.lineTo(ES_SIZE / 2, ES_SIZE - 24);
+    g.moveTo(24, ES_SIZE / 2); g.lineTo(ES_SIZE - 24, ES_SIZE / 2);
+    g.stroke();
+    g.setLineDash([]);
+  }
   g.strokeStyle = document.documentElement.getAttribute('data-theme') === 'dark' ? '#f2f4f7' : '#1c1e21';
   g.lineWidth = ES_SIZE * 0.055; g.lineCap = 'round'; g.lineJoin = 'round';
   esPts.forEach(st => {
@@ -839,7 +891,7 @@ function redrawTrazos() {
 }
 function esPos(e) {
   const r = e.target.getBoundingClientRect();
-  return [e.clientX - r.left, e.clientY - r.top];
+  return [(e.clientX - r.left) * ES_SIZE / r.width, (e.clientY - r.top) * ES_SIZE / r.height];
 }
 function esDown(e) {
   esTrazando = true;
@@ -855,7 +907,11 @@ function esMove(e) {
 function esUp() { esTrazando = false; }
 function limpiarLienzo() { esPts = []; redrawTrazos(); document.getElementById('es-score').textContent = ''; }
 function comprobarEscribe() {
-  if (!esPts.length || !esInk.length) { document.getElementById('es-score').textContent = '✍️ Dibújalo primero sobre la guía'; return; }
+  if (!esPts.length || !esInk.length) { document.getElementById('es-score').textContent = '✍️ Dibuja el carácter antes de comprobarlo'; return; }
+  clearTimeout(esPistaTimer);
+  esMostrarGuia = true;
+  pintarReferenciaEscribe();
+  redrawTrazos();
   const R2 = ES_RADIO * ES_RADIO;
   let hit = 0;
   for (const [x, y] of esInk) {
@@ -870,8 +926,8 @@ function comprobarEscribe() {
   trackGame('escribe', pass);
   trackWord(esActual.hanzi, pass);
   document.getElementById('es-score').textContent = pass
-    ? `✅ ${cov}% de cobertura · ¡ese ${esActual.hanzi} ya es tuyo! +15 XP`
-    : `❌ ${cov}% — te faltó tinta (mínimo ${ES_MIN}%). Limpia y otra vez`;
+    ? `✅ ${cov}% de cobertura · ¡${esActual.hanzi} ya es tuyo! +15 XP`
+    : `❌ ${cov}% — compara con la guía y vuelve a intentarlo (mínimo ${ES_MIN}%)`;
   if (pass) {
     esPtsSesion += 15;
     addXP(15);
