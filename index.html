@@ -406,17 +406,23 @@
     <!-- ============ ESCRIBE ============ -->
     <section id="view-escribe" class="view">
       <div class="view-head">
-        <div><h2>✍️ Escribe</h2><p class="subtitle">Traza el carácter sobre la guía gris. Se mide cuánta tinta cubres.</p></div>
+        <div><h2>✍️ Práctica de hànzì</h2><p class="subtitle">Aprende a escribir cada carácter con guía o de memoria.</p></div>
         <button class="btn ghost" onclick="showView('menu')">← Menú</button>
       </div>
       <div class="es-box">
+        <div class="es-modes" role="group" aria-label="Modo de práctica de hànzì">
+          <button class="btn sm es-mode active" id="es-modo-guia" type="button" aria-pressed="true" onclick="setEsModo('guia')">Traza con guía</button>
+          <button class="btn sm es-mode" id="es-modo-memoria" type="button" aria-pressed="false" onclick="setEsModo('memoria')">Escribe de memoria</button>
+        </div>
+        <p id="es-instruccion" class="es-instruccion" aria-live="polite">Sigue la forma gris con el dedo o el mouse.</p>
         <div id="es-hanzi" class="pinyin-hanzi">—</div>
         <div id="es-info" class="pinyin-es">—</div>
-        <canvas id="es-canvas" class="es-canvas" aria-label="Lienzo para trazar el carácter"
+        <canvas id="es-canvas" class="es-canvas" aria-label="Lienzo para escribir el carácter chino"
           onpointerdown="esDown(event)" onpointermove="esMove(event)" onpointerup="esUp()" onpointerleave="esUp()"></canvas>
         <div class="controls">
+          <button class="btn ghost hidden" id="es-pista" type="button" onclick="mostrarPistaEscribe()">👁️ Ver pista</button>
           <button class="btn ghost" onclick="limpiarLienzo()">🧽 Limpiar</button>
-          <button class="btn primary" onclick="comprobarEscribe()">✅ Comprobar trazo</button>
+          <button class="btn primary" onclick="comprobarEscribe()">✅ Comprobar</button>
           <button class="btn ghost" onclick="nuevaEscribe()">▶ Otro carácter</button>
         </div>
         <div id="es-score" class="ch-result" aria-live="polite"></div>
