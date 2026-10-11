@@ -186,9 +186,25 @@ function actualizarMenu() {
   document.getElementById('record-tonos').textContent = dibEstrellas(estrellas('tonos')) + ' ' + S.games.tonos.best + ' pts';
   document.getElementById('record-pronuncia').textContent = dibEstrellas(estrellas('pronuncia')) + ' ' + S.games.pronuncia.best + ' pts';
   document.getElementById('record-escribe').textContent = dibEstrellas(estrellas('escribe')) + ' ' + S.games.escribe.best + ' pts';
-  const dd = document.getElementById('daily-due');
-  if (dd) dd.textContent = repasoDebido() + ' palabras te esperan hoy';
   const deb = repasoDebido();
+  const dd = document.getElementById('daily-due');
+  if (dd) dd.textContent = deb > 0
+    ? `Hoy te esperan ${deb} palabra${deb === 1 ? '' : 's'} para repasar.`
+    : 'Sigue tu ruta o practica una palabra nueva.';
+  const meta = document.getElementById('daily-progress');
+  const metaXP = document.getElementById('daily-progress-label');
+  const metaLeft = document.getElementById('daily-goal-left');
+  const metaFill = document.getElementById('daily-progress-fill');
+  if (meta && metaXP && metaLeft && metaFill) {
+    const goal = Math.max(1, Number(S.goal) || 50);
+    const xpToday = Number(S.xpByDay[diaLocal()] || 0);
+    const percent = Math.min(100, Math.round(xpToday / goal * 100));
+    meta.setAttribute('aria-valuemax', String(goal));
+    meta.setAttribute('aria-valuenow', String(Math.min(goal, xpToday)));
+    metaFill.style.width = percent + '%';
+    metaXP.textContent = `${xpToday} / ${goal} XP`;
+    metaLeft.textContent = percent >= 100 ? '¡Meta diaria cumplida!' : `${goal - xpToday} XP para tu meta`;
+  }
   const chip = document.getElementById('srs-due');
   chip.textContent = deb > 0 ? `🎯 ${deb} palabra${deb > 1 ? 's' : ''} para repasar hoy` : '✅ Repaso al día';
   chip.classList.toggle('due', deb > 0);
