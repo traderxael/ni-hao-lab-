@@ -96,11 +96,22 @@
         </div>
       </div>
 
-      <div class="daily-cta" onclick="empezarSesion()" role="button" tabindex="0">
-        <span class="daily-emoji">🎯</span>
-        <div><b>Sesión diaria</b><small id="daily-due">—</small></div>
-        <i>→</i>
-      </div>
+      <section class="daily-cta" aria-labelledby="daily-title">
+        <div class="daily-emoji" aria-hidden="true">🎯</div>
+        <div class="daily-copy">
+          <span class="daily-kicker">TU PLAN DE HOY</span>
+          <h3 id="daily-title">Una práctica corta cuenta</h3>
+          <p id="daily-due">—</p>
+          <div class="daily-progress" id="daily-progress" role="progressbar" aria-label="Progreso de la meta diaria" aria-valuemin="0" aria-valuemax="50" aria-valuenow="0">
+            <span id="daily-progress-fill"></span>
+          </div>
+          <div class="daily-progress-meta">
+            <span id="daily-progress-label">0 / 50 XP</span>
+            <span id="daily-goal-left">50 XP para tu meta</span>
+          </div>
+        </div>
+        <button class="daily-start" type="button" onclick="empezarSesion()">Empezar sesión <span aria-hidden="true">→</span></button>
+      </section>
 
       <details class="metodo">
         <summary>🧠 Cómo aprende tu cerebro chino (el método de la app)</summary>
