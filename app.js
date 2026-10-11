@@ -186,9 +186,25 @@ function actualizarMenu() {
   document.getElementById('record-tonos').textContent = dibEstrellas(estrellas('tonos')) + ' ' + S.games.tonos.best + ' pts';
   document.getElementById('record-pronuncia').textContent = dibEstrellas(estrellas('pronuncia')) + ' ' + S.games.pronuncia.best + ' pts';
   document.getElementById('record-escribe').textContent = dibEstrellas(estrellas('escribe')) + ' ' + S.games.escribe.best + ' pts';
-  const dd = document.getElementById('daily-due');
-  if (dd) dd.textContent = repasoDebido() + ' palabras te esperan hoy';
   const deb = repasoDebido();
+  const dd = document.getElementById('daily-due');
+  if (dd) dd.textContent = deb > 0
+    ? `Hoy te esperan ${deb} palabra${deb === 1 ? '' : 's'} para repasar.`
+    : 'Sigue tu ruta o practica una palabra nueva.';
+  const meta = document.getElementById('daily-progress');
+  const metaXP = document.getElementById('daily-progress-label');
+  const metaLeft = document.getElementById('daily-goal-left');
+  const metaFill = document.getElementById('daily-progress-fill');
+  if (meta && metaXP && metaLeft && metaFill) {
+    const goal = Math.max(1, Number(S.goal) || 50);
+    const xpToday = Number(S.xpByDay[diaLocal()] || 0);
+    const percent = Math.min(100, Math.round(xpToday / goal * 100));
+    meta.setAttribute('aria-valuemax', String(goal));
+    meta.setAttribute('aria-valuenow', String(Math.min(goal, xpToday)));
+    metaFill.style.width = percent + '%';
+    metaXP.textContent = `${xpToday} / ${goal} XP`;
+    metaLeft.textContent = percent >= 100 ? '¡Meta diaria cumplida!' : `${goal - xpToday} XP para tu meta`;
+  }
   const chip = document.getElementById('srs-due');
   chip.textContent = deb > 0 ? `🎯 ${deb} palabra${deb > 1 ? 's' : ''} para repasar hoy` : '✅ Repaso al día';
   chip.classList.toggle('due', deb > 0);
@@ -764,15 +780,145 @@ function desbloquearVoz() {
 document.addEventListener('pointerdown', desbloquearVoz);
 // ================= ESCRIBE (trazado con score por cobertura) =================
 let esActual = null, esPts = [], esInk = [], esTrazando = false, esPtsSesion = 0;
+let esModoMemoria = false, esMostrarGuia = false, esPistaTimer = null;
+let strokeWriter = null, strokeWriterChar = "", strokeRequest = 0, strokeMistakes = 0;
 const ES_SIZE = 300, ES_RADIO = 14, ES_MIN = 60;
+function pintarReferenciaEscribe() {
+  const ref = document.getElementById('es-hanzi');
+  const oculta = esModoMemoria && !esMostrarGuia;
+  ref.classList.toggle('es-masked', oculta);
+  ref.setAttribute('aria-hidden', String(oculta));
+}
+function setEsModo(modo) {
+  esModoMemoria = modo === 'memoria';
+  esMostrarGuia = false;
+  clearTimeout(esPistaTimer);
+  const guia = document.getElementById('es-modo-guia');
+  const memoria = document.getElementById('es-modo-memoria');
+  const pista = document.getElementById('es-pista');
+  guia.classList.toggle('active', !esModoMemoria);
+  guia.setAttribute('aria-pressed', String(!esModoMemoria));
+  memoria.classList.toggle('active', esModoMemoria);
+  memoria.setAttribute('aria-pressed', String(esModoMemoria));
+  pista.classList.toggle('hidden', !esModoMemoria);
+  pintarReferenciaEscribe();
+  document.getElementById('es-instruccion').textContent = esModoMemoria
+    ? 'Escribe el carácter sin verlo. Comprueba tu trazo para descubrir la respuesta.'
+    : 'Sigue la forma gris con el dedo o el mouse.';
+  if (esActual) redrawTrazos();
+}
+function mostrarPistaEscribe() {
+  if (!esModoMemoria || !esActual) return;
+  clearTimeout(esPistaTimer);
+  esMostrarGuia = true;
+  pintarReferenciaEscribe();
+  redrawTrazos();
+  const b = document.getElementById('es-pista');
+  b.textContent = '👁️ Pista visible…';
+  esPistaTimer = setTimeout(() => {
+    esMostrarGuia = false;
+    pintarReferenciaEscribe();
+    b.textContent = '👁️ Ver pista';
+    redrawTrazos();
+  }, 1500);
+}
+function cargarPracticaTrazos(char) {
+  const host = document.getElementById('stroke-writer');
+  const status = document.getElementById('stroke-status');
+  const animate = document.getElementById('stroke-animate');
+  const quiz = document.getElementById('stroke-quiz');
+  if (!host || !char) return;
+  if (typeof HanziWriter === 'undefined') {
+    status.textContent = 'Conéctate a internet una vez para descargar la guía de trazos; después quedará guardada en este dispositivo.';
+    animate.disabled = true; quiz.disabled = true;
+    return;
+  }
+  const request = ++strokeRequest;
+  if (strokeWriter) strokeWriter.cancelQuiz();
+  host.replaceChildren();
+  strokeWriterChar = char;
+  animate.disabled = true; quiz.disabled = true;
+  status.textContent = 'Cargando el orden de los trazos…';
+  strokeWriter = HanziWriter.create(host, char, {
+    width: 260, height: 260, padding: 18, showCharacter: false, showOutline: true,
+    strokeColor: '#d7373f', outlineColor: '#d7dbe2', highlightColor: '#f1a23a',
+    drawingColor: '#20242b', drawingWidth: 5, strokeAnimationSpeed: 1,
+    charDataLoader: (character, onComplete) => {
+      const url = 'https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/' + encodeURIComponent(character) + '.json';
+      const cached = window.caches ? caches.open('nihao-v8').then(cache => cache.match(url)) : Promise.resolve(null);
+      cached.then(hit => hit ? hit.json() : fetch(url).then(response => {
+        if (!response.ok) throw new Error('No se pudieron cargar los trazos');
+        const copy = response.clone();
+        if (window.caches) caches.open('nihao-v8').then(cache => cache.put(url, copy)).catch(() => {});
+        return response.json();
+      })).then(onComplete).catch(() => {
+        if (request === strokeRequest) status.textContent = 'No se pudo cargar este carácter. Conéctate y vuelve a intentarlo; los caracteres ya vistos quedan disponibles sin conexión.';
+      });
+    },
+    onLoadCharDataSuccess: data => {
+      if (request !== strokeRequest) return;
+      animate.disabled = false; quiz.disabled = false;
+      status.textContent = data.strokes.length + ' trazos · observa la animación y después practícalos en orden.';
+    },
+    onLoadCharDataError: () => {
+      if (request !== strokeRequest) return;
+      status.textContent = 'No se pudo cargar la guía. Revisa tu conexión e inténtalo de nuevo.';
+    }
+  });
+}
+function reproducirTrazos() {
+  if (!strokeWriter || strokeWriterChar !== (esActual && esActual.hanzi)) return;
+  strokeWriter.cancelQuiz();
+  strokeWriter.hideCharacter({ duration: 0 });
+  document.getElementById('stroke-status').textContent = 'Mira cómo se escribe ' + strokeWriterChar + ', trazo por trazo.';
+  strokeWriter.animateCharacter({ onComplete: () => {
+    document.getElementById('stroke-status').textContent = '¡Listo! Pulsa “Practicar orden” para dibujarlo tú.';
+  }});
+}
+function empezarQuizTrazos() {
+  if (!strokeWriter || strokeWriterChar !== (esActual && esActual.hanzi)) return;
+  strokeWriter.cancelQuiz();
+  strokeWriter.hideCharacter({ duration: 0 });
+  strokeMistakes = 0;
+  document.getElementById('stroke-status').textContent = 'Empieza por el primer trazo de ' + strokeWriterChar + '. Sigue la dirección de la pista.';
+  strokeWriter.quiz({
+    showHintAfterMisses: 2,
+    onMistake: data => {
+      strokeMistakes = data.totalMistakes || strokeMistakes + 1;
+      document.getElementById('stroke-status').textContent = 'Casi. Mira la pista y vuelve a dibujar ese trazo.';
+    },
+    onCorrectStroke: data => {
+      document.getElementById('stroke-status').textContent = data.strokesRemaining
+        ? '¡Bien! Trazo ' + (data.strokeNum + 1) + '. Quedan ' + data.strokesRemaining + '.'
+        : '¡Último trazo!';
+    },
+    onComplete: data => {
+      trackGame('escribe', true);
+      trackWord(esActual.hanzi, true);
+      esPtsSesion += 15; addXP(15); addMonedas(2);
+      if (S.games.escribe.ok >= 3) maybeAchv('trazo');
+      document.getElementById('stroke-status').textContent = data.totalMistakes
+        ? '¡Carácter completo! Tuviste ' + data.totalMistakes + ' intentos extra. +15 XP'
+        : '¡Perfecto, respetaste el orden de todos los trazos! +15 XP';
+      document.getElementById('es-score').textContent = '✅ ' + esActual.hanzi + ' · orden de trazos completado · +15 XP';
+      if (esPtsSesion > S.games.escribe.best) { S.games.escribe.best = esPtsSesion; save(); }
+      actualizarMenu();
+      setTimeout(nuevaEscribe, 1800);
+    }
+  });
+}
 function nuevaEscribe() {
   const unos = pool().filter(w => [...w.hanzi].length === 1);
   esActual = rnd(unos.length ? unos : pool());
   esPts = [];
+  esMostrarGuia = false;
+  clearTimeout(esPistaTimer);
   document.getElementById('es-hanzi').textContent = esActual.hanzi;
-  document.getElementById('es-info').textContent = esActual.pinyin + ' · ' + esActual.es + ' — repásalo con el dedo o el mouse';
+  pintarReferenciaEscribe();
+  document.getElementById('es-info').textContent = esActual.pinyin + ' · ' + esActual.es + ' — practica sus trazos';
   document.getElementById('es-score').textContent = '';
   prepararLienzo();
+  cargarPracticaTrazos(esActual.hanzi);
 }
 function prepararLienzo() {
   const cv = document.getElementById('es-canvas');
@@ -784,8 +930,6 @@ function prepararLienzo() {
   g.clearRect(0, 0, ES_SIZE, ES_SIZE);
   g.font = '500 ' + (ES_SIZE * 0.78) + 'px "Noto Sans SC", sans-serif';
   g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.fillStyle = 'rgba(128,138,155,.28)';
-  g.fillText(esActual.hanzi, ES_SIZE / 2, ES_SIZE / 2 + ES_SIZE * 0.03);
   // muestras de tinta en canvas aparte
   const off = document.createElement('canvas');
   off.width = ES_SIZE; off.height = ES_SIZE;
@@ -809,8 +953,19 @@ function redrawTrazos() {
   g.clearRect(0, 0, ES_SIZE, ES_SIZE);
   g.font = '500 ' + ES_SIZE * 0.78 + 'px "Noto Sans SC", sans-serif';
   g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.fillStyle = 'rgba(128,138,155,.28)';
-  g.fillText(esActual.hanzi, ES_SIZE / 2, ES_SIZE / 2 + ES_SIZE * 0.03);
+  if (!esModoMemoria || esMostrarGuia) {
+    g.fillStyle = 'rgba(128,138,155,.34)';
+    g.fillText(esActual.hanzi, ES_SIZE / 2, ES_SIZE / 2 + ES_SIZE * 0.03);
+  } else {
+    g.strokeStyle = 'rgba(128,138,155,.28)';
+    g.lineWidth = 1;
+    g.setLineDash([4, 6]);
+    g.beginPath();
+    g.moveTo(ES_SIZE / 2, 24); g.lineTo(ES_SIZE / 2, ES_SIZE - 24);
+    g.moveTo(24, ES_SIZE / 2); g.lineTo(ES_SIZE - 24, ES_SIZE / 2);
+    g.stroke();
+    g.setLineDash([]);
+  }
   g.strokeStyle = document.documentElement.getAttribute('data-theme') === 'dark' ? '#f2f4f7' : '#1c1e21';
   g.lineWidth = ES_SIZE * 0.055; g.lineCap = 'round'; g.lineJoin = 'round';
   esPts.forEach(st => {
@@ -823,7 +978,7 @@ function redrawTrazos() {
 }
 function esPos(e) {
   const r = e.target.getBoundingClientRect();
-  return [e.clientX - r.left, e.clientY - r.top];
+  return [(e.clientX - r.left) * ES_SIZE / r.width, (e.clientY - r.top) * ES_SIZE / r.height];
 }
 function esDown(e) {
   esTrazando = true;
@@ -839,7 +994,11 @@ function esMove(e) {
 function esUp() { esTrazando = false; }
 function limpiarLienzo() { esPts = []; redrawTrazos(); document.getElementById('es-score').textContent = ''; }
 function comprobarEscribe() {
-  if (!esPts.length || !esInk.length) { document.getElementById('es-score').textContent = '✍️ Dibújalo primero sobre la guía'; return; }
+  if (!esPts.length || !esInk.length) { document.getElementById('es-score').textContent = '✍️ Dibuja el carácter antes de comprobarlo'; return; }
+  clearTimeout(esPistaTimer);
+  esMostrarGuia = true;
+  pintarReferenciaEscribe();
+  redrawTrazos();
   const R2 = ES_RADIO * ES_RADIO;
   let hit = 0;
   for (const [x, y] of esInk) {
@@ -854,8 +1013,8 @@ function comprobarEscribe() {
   trackGame('escribe', pass);
   trackWord(esActual.hanzi, pass);
   document.getElementById('es-score').textContent = pass
-    ? `✅ ${cov}% de cobertura · ¡ese ${esActual.hanzi} ya es tuyo! +15 XP`
-    : `❌ ${cov}% — te faltó tinta (mínimo ${ES_MIN}%). Limpia y otra vez`;
+    ? `✅ ${cov}% de cobertura · ¡${esActual.hanzi} ya es tuyo! +15 XP`
+    : `❌ ${cov}% — compara con la guía y vuelve a intentarlo (mínimo ${ES_MIN}%)`;
   if (pass) {
     esPtsSesion += 15;
     addXP(15);
@@ -1423,12 +1582,45 @@ function resetDato(tipo) {
   toastLogro('🧹 Reseteado: ' + (nombres[tipo] || tipo));
 }
 
+// ===== Instalación PWA =====
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', event => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+});
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  document.getElementById('btn-instalar').hidden = true;
+});
+async function instalarPwa() {
+  const button = document.getElementById('btn-instalar');
+  if (deferredInstallPrompt) {
+    const prompt = deferredInstallPrompt;
+    deferredInstallPrompt = null;
+    await prompt.prompt();
+    const choice = await prompt.userChoice;
+    if (choice.outcome === 'accepted') button.hidden = true;
+    return;
+  }
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  document.getElementById('install-help-title').textContent = ios ? 'Añadir NiHao Lab al inicio' : 'Instala NiHao Lab en tu celular';
+  document.getElementById('install-help-copy').textContent = ios
+    ? 'En Safari, toca Compartir y elige “Añadir a pantalla de inicio”. Luego abre NiHao Lab desde su nuevo icono.'
+    : 'Abre el menú ⋮ de tu navegador y elige “Instalar app” o “Añadir a pantalla principal”.';
+  document.getElementById('install-help').showModal();
+}
+(function initPwaInstall() {
+  const button = document.getElementById('btn-instalar');
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  if (standalone) button.hidden = true;
+})();
+
 // ===== init =====
 // PWA: registra el service worker solo en http(s), no en file://
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }
-// Atajo ?juego=quiz|escucha|flash... (usado por los shortcuts de la PWA)
+// Atajo ?juego=quiz|escucha|flash|escribe... (usado por los shortcuts de la PWA)
 (function juegoDesdeURL() {
   const j = new URLSearchParams(location.search).get('juego');
   if (j && document.getElementById('view-' + j)) {
