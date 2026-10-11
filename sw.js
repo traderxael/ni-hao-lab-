@@ -1,5 +1,7 @@
 /* NiHao Lab · Service Worker: la app funciona sin internet tras la 1ª visita */
-const CACHE = 'nihao-v7';
+const CACHE = 'nihao-v8';
+const HANZI_WRITER_ORIGIN = 'https://cdn.jsdelivr.net';
+const HANZI_WRITER_SCRIPT = 'https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js';
 const ASSETS = [
   './',
   'index.html',
@@ -17,7 +19,13 @@ const ASSETS = [
 
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE).then(async cache => {
+      await cache.addAll(ASSETS);
+      try {
+        const response = await fetch(HANZI_WRITER_SCRIPT, { mode: 'cors' });
+        if (response.ok) await cache.put(HANZI_WRITER_SCRIPT, response);
+      } catch (_) { /* La app principal se instala aunque falle la guía externa. */ }
+    }).then(() => self.skipWaiting())
   );
 });
 
@@ -31,18 +39,21 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
-  const sameOrigin = new URL(e.request.url).origin === location.origin;
-  if (!sameOrigin) return; // Google Fonts etc.: directo a red, sin caché
+  const requestUrl = new URL(e.request.url);
+  const sameOrigin = requestUrl.origin === location.origin;
+  const hanziResource = requestUrl.origin === HANZI_WRITER_ORIGIN &&
+    (requestUrl.href === HANZI_WRITER_SCRIPT || requestUrl.pathname.includes('/hanzi-writer-data@'));
+  if (!sameOrigin && !hanziResource) return; // Google Fonts etc.: directo a red, sin caché
   e.respondWith(
     caches.match(e.request, { ignoreSearch: true }).then(hit => {
       if (hit) return hit;
       return fetch(e.request).then(res => {
-        if (res && res.ok) {
+        if (res && res.ok && (sameOrigin || res.type === 'cors')) {
           const cp = res.clone();
           caches.open(CACHE).then(c => c.put(e.request, cp));
         }
         return res;
-      }).catch(() => caches.match('index.html'));
+      }).catch(() => sameOrigin ? caches.match('index.html') : Promise.reject(new Error('Sin conexión')));
     })
   );
 });
