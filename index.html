@@ -186,7 +186,7 @@
         <article class="card" style="--c1:#0ea5e9;--c2:#7dd3fc" onclick="showView('escribe')">
           <div class="card-emoji">✍️</div>
           <h3>Escribe</h3>
-          <p>Traza el carácter sobre la guía: se puntúa tu tinta.</p>
+          <p>Elige un hànzì, aprende el orden y practica cada trazo.</p>
           <div class="record">🏆 <span id="record-escribe">0 pts</span></div>
           <span class="card-cta">Trazar <i>→</i></span>
         </article>
@@ -412,6 +412,13 @@
         <button class="btn ghost" onclick="showView('menu')">← Menú</button>
       </div>
       <div class="es-box">
+        <div class="es-picker">
+          <label for="es-selector">Elige el hànzì que quieres practicar</label>
+          <select id="es-selector" onchange="seleccionarEscribe(this.value)" aria-describedby="es-selector-help">
+            <option value="">🎲 Carácter al azar</option>
+          </select>
+          <p id="es-selector-help" class="es-picker-help" aria-live="polite"></p>
+        </div>
         <div class="es-modes" role="group" aria-label="Modo de práctica de hànzì">
           <button class="btn sm es-mode active" id="es-modo-guia" type="button" aria-pressed="true" onclick="setEsModo('guia')">Traza con guía</button>
           <button class="btn sm es-mode" id="es-modo-memoria" type="button" aria-pressed="false" onclick="setEsModo('memoria')">Escribe de memoria</button>

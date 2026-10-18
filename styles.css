@@ -464,6 +464,16 @@ html[data-theme="dark"] .daily-cta { color: #101113; }
 /* ============ PRACTICA DE HANZI ============ */
 .es-hanzi.es-masked { visibility: hidden; }
 
+.es-picker { width: min(100%, 440px); margin: 0 auto 16px; text-align: left; }
+.es-picker label { display: block; margin: 0 0 6px; color: var(--ink-2); font-size: .8rem; font-weight: 800; }
+.es-picker select {
+  width: 100%; min-height: 46px; padding: 0 14px; border: 1px solid var(--line);
+  border-radius: 14px; background: var(--surface); color: var(--ink);
+  font: 700 .9rem 'Manrope', sans-serif;
+}
+.es-picker select:focus-visible { outline: 3px solid var(--accent-soft); outline-offset: 2px; }
+.es-picker-help { min-height: 1.2em; margin: 7px 0 0; color: var(--ink-2); font-size: .76rem; line-height: 1.4; }
+
 .es-modes { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin: 0 0 8px; }
 .es-mode { border-color: var(--line); background: var(--surface-2); color: var(--ink-2); box-shadow: none; }
 .es-mode.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }

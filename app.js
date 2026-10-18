@@ -13,6 +13,10 @@ function showView(name) {
   if (name === 'cultura') renderCultura();
   if (name === 'cuaderno') renderCuaderno();
   if (name === 'tienda') renderTienda();
+  if (name === 'escribe') {
+    const selector = actualizarSelectorEscribe(esActual ? esActual.hanzi : '');
+    if (esActual && !selector.selected) nuevaEscribe();
+  }
 }
 
 function borrarTodo() {
@@ -907,9 +911,42 @@ function empezarQuizTrazos() {
     }
   });
 }
-function nuevaEscribe() {
-  const unos = pool().filter(w => [...w.hanzi].length === 1);
-  esActual = rnd(unos.length ? unos : pool());
+function opcionesHanziEscribe() {
+  const delFiltro = pool().filter(w => [...w.hanzi].length === 1);
+  const fuente = delFiltro.length ? delFiltro : VOCAB.filter(w => [...w.hanzi].length === 1);
+  const unicos = new Map();
+  fuente.forEach(w => { if (!unicos.has(w.hanzi)) unicos.set(w.hanzi, w); });
+  return {
+    items: [...unicos.values()].sort((a, b) => a.pinyin.localeCompare(b.pinyin, 'es')),
+    filtrados: delFiltro.length > 0
+  };
+}
+function actualizarSelectorEscribe(seleccion = '') {
+  const select = document.getElementById('es-selector');
+  if (!select) return { items: [], selected: false };
+  const ayuda = document.getElementById('es-selector-help');
+  const { items, filtrados } = opcionesHanziEscribe();
+  const fragmento = document.createDocumentFragment();
+  const aleatorio = document.createElement('option');
+  aleatorio.value = '';
+  aleatorio.textContent = '🎲 Carácter al azar';
+  fragmento.appendChild(aleatorio);
+  items.forEach(w => {
+    const opcion = document.createElement('option');
+    opcion.value = w.hanzi;
+    opcion.textContent = w.hanzi + ' · ' + w.pinyin + ' — ' + w.es + ' · HSK ' + w.hsk;
+    fragmento.appendChild(opcion);
+  });
+  select.replaceChildren(fragmento);
+  const selected = items.some(w => w.hanzi === seleccion);
+  select.value = selected ? seleccion : '';
+  ayuda.textContent = filtrados
+    ? items.length + ' caracteres disponibles según tus filtros.'
+    : items.length + ' caracteres disponibles. Tus filtros no tienen caracteres individuales; mostramos el catálogo completo.';
+  return { items, selected };
+}
+function mostrarCaracterEscribe(palabra, elegido = false) {
+  esActual = palabra;
   esPts = [];
   esMostrarGuia = false;
   clearTimeout(esPistaTimer);
@@ -917,8 +954,20 @@ function nuevaEscribe() {
   pintarReferenciaEscribe();
   document.getElementById('es-info').textContent = esActual.pinyin + ' · ' + esActual.es + ' — practica sus trazos';
   document.getElementById('es-score').textContent = '';
+  actualizarSelectorEscribe(elegido ? esActual.hanzi : '');
   prepararLienzo();
   cargarPracticaTrazos(esActual.hanzi);
+}
+function seleccionarEscribe(hanzi) {
+  if (!hanzi) { nuevaEscribe(); return; }
+  const { items } = opcionesHanziEscribe();
+  const palabra = items.find(w => w.hanzi === hanzi);
+  if (palabra) mostrarCaracterEscribe(palabra, true);
+}
+function nuevaEscribe() {
+  const { items } = opcionesHanziEscribe();
+  if (!items.length) return;
+  mostrarCaracterEscribe(rnd(items));
 }
 function prepararLienzo() {
   const cv = document.getElementById('es-canvas');
