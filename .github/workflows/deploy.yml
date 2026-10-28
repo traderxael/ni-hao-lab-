@@ -20,9 +20,13 @@
 # Git Repository) y cada push despliega solo.
 name: Deploy a Vercel
 
+# Solo manual: Vercel despliega solo en cada push. Este job fallaba en cada
+# push porque los secrets VERCEL_* nunca se configuraron.
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   deploy:
