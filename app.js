@@ -13,6 +13,7 @@ function showView(name) {
   if (name === 'cultura') renderCultura();
   if (name === 'cuaderno') renderCuaderno();
   if (name === 'tienda') renderTienda();
+  if (name === 'adivina' && !adActual) nuevaAdivina();
 }
 
 function borrarTodo() {
@@ -85,7 +86,7 @@ function addXP(n) {
     toastLogro('🎯 ¡Meta diaria cumplida! (' + S.goal + ' XP)');
     confeti();
   }
-  actualizarMenu();
+  menuDirty();
 }
 function addMonedas(n) {
   S.coins = (S.coins || 0) + n;
@@ -96,7 +97,7 @@ function addMonedas(n) {
   document.body.appendChild(t);
   apilarToast(t, 30);
   setTimeout(() => t.remove(), 1300);
-  actualizarMenu();
+  menuDirty();
 }
 function maybeAchv(id) {
   if (!desbloquear(id)) return;
@@ -105,6 +106,18 @@ function maybeAchv(id) {
 }
 
 // ===== Feedback visual (toasts apilados) =====
+// ===== Render coalesced: evitar repaints redundantes del header/menú =====
+let _menuRaf = 0;
+function menuDirty() {
+  if (_menuRaf) return;
+  _menuRaf = requestAnimationFrame(() => { _menuRaf = 0; actualizarMenu(); });
+}
+// Cache de texto: si el valor no cambia, no toca el DOM
+function setText(id, txt) {
+  const el = document.getElementById(id);
+  if (el && el._last !== txt) { el._last = txt; el.textContent = txt; }
+}
+
 let toastCount = 0;
 function apilarToast(el, base) {
   const i = toastCount++;
@@ -168,26 +181,28 @@ const TITULOS = ['🐣 Pollito', '🌱 Brote', '🐼 Panda junior', '🏮 Faroli
 const tituloNivel = n => TITULOS[Math.min(Math.floor((n - 1) / 2), TITULOS.length - 1)];
 function actualizarMenu() {
   const nivel = Math.floor(S.xp / 100) + 1;
-  document.getElementById('xp-total').textContent = S.xp;
-  document.getElementById('xp-nivel').textContent = nivel;
-  document.getElementById('xp-titulo').textContent = tituloNivel(nivel);
-  document.getElementById('xp-racha').textContent = S.racha;
-  document.getElementById('coins').textContent = '🪙 ' + (S.coins || 0);
+  setText('xp-total', String(S.xp));
+  setText('xp-nivel', String(nivel));
+  setText('xp-titulo', tituloNivel(nivel));
+  setText('xp-racha', String(S.racha));
+  setText('coins', '🪙 ' + (S.coins || 0));
   document.getElementById('xp-fill').style.width = ((S.xp % 100)) + '%';
-  document.getElementById('xp-next').textContent = (100 - (S.xp % 100)) + ' XP al nivel ' + (nivel + 1);
+  setText('xp-next', (100 - (S.xp % 100)) + ' XP al nivel ' + (nivel + 1));
   const p = pool();
   const sufHSK = filtroHSK ? ' HSK' + filtroHSK : ' HSK1+2';
   const sufCat = (S.ui.cat && S.ui.cat !== 'todas') ? ' · ' + cap(S.ui.cat) : '';
-  document.getElementById('conteo').textContent = p.length + ' palabras' + sufHSK + sufCat;
-  document.getElementById('record-memorama').textContent = (S.games.mem.best[S.ui.memPairs || 8]) || '—';
-  document.getElementById('record-quiz').textContent = dibEstrellas(estrellas('quiz')) + ' ' + S.games.quiz.best + ' pts';
-  document.getElementById('record-escucha').textContent = dibEstrellas(estrellas('escucha')) + ' ' + S.games.escucha.best + ' pts';
-  document.getElementById('record-pinyin').textContent = dibEstrellas(estrellas('pinyin')) + ' ' + S.games.pinyin.best + ' pts';
-  document.getElementById('record-tonos').textContent = dibEstrellas(estrellas('tonos')) + ' ' + S.games.tonos.best + ' pts';
-  document.getElementById('record-pronuncia').textContent = dibEstrellas(estrellas('pronuncia')) + ' ' + S.games.pronuncia.best + ' pts';
-  document.getElementById('record-escribe').textContent = dibEstrellas(estrellas('escribe')) + ' ' + S.games.escribe.best + ' pts';
+  setText('conteo', p.length + ' palabras' + sufHSK + sufCat);
+  setText('record-memorama', (S.games.mem.best[S.ui.memPairs || 8]) || '—');
+  setText('record-quiz', dibEstrellas(estrellas('quiz')) + ' ' + S.games.quiz.best + ' pts');
+  setText('record-escucha', dibEstrellas(estrellas('escucha')) + ' ' + S.games.escucha.best + ' pts');
+  setText('record-pinyin', dibEstrellas(estrellas('pinyin')) + ' ' + S.games.pinyin.best + ' pts');
+  setText('record-tonos', dibEstrellas(estrellas('tonos')) + ' ' + S.games.tonos.best + ' pts');
+  setText('record-pronuncia', dibEstrellas(estrellas('pronuncia')) + ' ' + S.games.pronuncia.best + ' pts');
+  setText('record-escribe', dibEstrellas(estrellas('escribe')) + ' ' + S.games.escribe.best + ' pts');
+  setText('record-adivina', dibEstrellas(estrellas('adivina')) + ' ' + S.games.adivina.best + ' pts');
   const deb = repasoDebido();
   const dd = document.getElementById('daily-due');
+  if (dd && dd._due !== deb) { dd._due = deb; }
   if (dd) dd.textContent = deb > 0
     ? `Hoy te esperan ${deb} palabra${deb === 1 ? '' : 's'} para repasar.`
     : 'Sigue tu ruta o practica una palabra nueva.';
@@ -208,18 +223,18 @@ function actualizarMenu() {
   const chip = document.getElementById('srs-due');
   chip.textContent = deb > 0 ? `🎯 ${deb} palabra${deb > 1 ? 's' : ''} para repasar hoy` : '✅ Repaso al día';
   chip.classList.toggle('due', deb > 0);
-  document.getElementById('record-flash').textContent = S.games.flash.vistas + ' vistas';
+  setText('record-flash', S.games.flash.vistas + ' vistas');
   // progreso del camino
   let cStars = 0, cUnits = 0;
   UNIDADES.forEach(u => {
     const st = S.camino[u.id];
     if (st) { cStars += Object.values(st.stars || {}).reduce((a, b) => a + b, 0); if ((st.done || 0) >= 1) cUnits++; }
   });
-  document.getElementById('record-ruta').textContent = cUnits === 0 ? 'Empieza hoy 🛤️' : `Unidad ${Math.min(cUnits + 1, UNIDADES.length)}/${UNIDADES.length} · ⭐${cStars}`;
-  document.getElementById('record-cultura').textContent = `${leidos().length}/${POEMAS.length} poemas 🏮`;
+  setText('record-ruta', cUnits === 0 ? 'Empieza hoy 🛤️' : `Unidad ${Math.min(cUnits + 1, UNIDADES.length)}/${UNIDADES.length} · ⭐${cStars}`);
+  setText('record-cultura', `${leidos().length}/${POEMAS.length} poemas 🏮`);
   const cc = contadores(VOCAB);
-  document.getElementById('record-cuaderno').textContent = `${cc.dominada}/${VOCAB.length} dominadas ✅`;
-  document.getElementById('record-tienda').textContent = (S.coins || 0) + ' monedas';
+  setText('record-cuaderno', `${cc.dominada}/${VOCAB.length} dominadas ✅`);
+  setText('record-tienda', (S.coins || 0) + ' monedas');
 }
 
 // ===== Audio gratis (lento opcional) =====
@@ -244,6 +259,7 @@ function empezarRepaso(game) {
   if (game === 'pinyin') nuevaPinyin();
   if (game === 'tonos') { if (tModo === 'pares') nuevoPar(); else nuevoTono(); }
   if (game === 'pronuncia') nuevaPronuncia();
+  if (game === 'adivina') nuevaAdivina();
   pintarRepaso();
   toastLogro('🎯 Repasando tus ' + repasoPool.length + ' palabras débiles');
 }
@@ -286,14 +302,16 @@ function iniciarMemorama() {
   document.getElementById('mem-win').classList.add('hidden');
   updMem();
   const board = document.getElementById('mem-board');
-  board.innerHTML = '';
+  board.textContent = '';
+  const frag = document.createDocumentFragment();
   mazo.forEach(c => {
     const d = document.createElement('div');
     d.className = 'mem-card zh';
-    d.innerHTML = '❓';
+    d.textContent = '❓';
     d.onclick = () => voltear(c.id, d);
-    board.appendChild(d);
+    frag.appendChild(d);
   });
+  board.appendChild(frag);
   memTimer = setInterval(() => { memSeg++; document.getElementById('mem-tiempo').textContent = memSeg + 's'; }, 1000);
   pintarPares();
 }
@@ -517,14 +535,16 @@ function setTonoModo(m) {
 }
 function pintarTonoOpts(items, responder, targetId) {
   const box = document.getElementById(targetId || 'tono-opts');
-  box.innerHTML = '';
+  box.textContent = '';
+  const frag = document.createDocumentFragment();
   items.forEach(o => {
     const b = document.createElement('button');
     b.className = 'tono-pick';
     b.innerHTML = `<b>${o.hz}</b><small>${o.py} · ${o.es}</small>`;
     b.onclick = () => responder(o, b);
-    box.appendChild(b);
+    frag.appendChild(b);
   });
+  box.appendChild(frag);
 }
 function nuevoPar() {
   tPar = rnd(PARES_TONO);
@@ -1026,13 +1046,108 @@ function comprobarEscribe() {
   actualizarMenu();
 }
 
+// ================= 🧐 ADIVINA EL CARÁCTER (estilo Typedoodle) =================
+// Te damos pistas progresivas (radicales y componentes) y debes escribir el hànzì.
+// Menos pistas reveladas = más puntos.
+let adActual = null, adPts = 0, adRacha = 0, adNivelPista = 0, adOk = false;
+function poolAdivina() {
+  const conPistas = VOCAB.filter(w => ADIVINA_PISTAS[w.hanzi] && [...w.hanzi].length === 1);
+  return (repasoPool && repasoPool.length >= 4 ? repasoPool : conPistas);
+}
+function nuevaAdivina() {
+  const p = poolAdivina();
+  if (!p.length) { document.getElementById('ad-hanzi').textContent = '😅'; return; }
+  let w = rnd(p), guard = 0;
+  while (adActual && w.hanzi === adActual.hanzi && guard++ < 8) w = rnd(p);
+  adActual = w; adOk = false; adNivelPista = 0;
+  const inp = document.getElementById('ad-input');
+  inp.value = ''; inp.disabled = false; inp.focus();
+  document.getElementById('ad-intro').innerHTML = `¿Qué carácter es? Escríbelo en tu teclado chino o pega aquí la respuesta.`;
+  pintarPistasAdivina();
+  document.getElementById('ad-feedback').textContent = '';
+  document.getElementById('ad-n').textContent = Object.keys(ADIVINA_PISTAS).length + ' caracteres con pistas';
+}
+function pistaActualAdivina() {
+  const ps = ADIVINA_PISTAS[adActual.hanzi] || [];
+  return ps.slice(0, adNivelPista + 1).map((t, i) => `<div class="ad-pista">${i < adNivelPista ? '✅ ' : '💡 '}${t}</div>`).join('');
+}
+function pintarPistasAdivina() {
+  document.getElementById('ad-pistas').innerHTML = pistaActualAdivina();
+  const mas = (ADIVINA_PISTAS[adActual.hanzi] || []).length > adNivelPista + 1;
+  document.getElementById('ad-maspista').style.display = mas ? '' : 'none';
+}
+function revelarPista() {
+  if (!adActual || adOk) return;
+  const max = (ADIVINA_PISTAS[adActual.hanzi] || []).length - 1;
+  if (adNivelPista < max) adNivelPista++;
+  else { responderAdivina(true); return; } // sin más pistas: revela la respuesta
+  pintarPistasAdivina();
+}
+function comprobarAdivinaTecla(ev) {
+  if (!adActual || adOk) return;
+  const v = document.getElementById('ad-input').value.trim();
+  if (!v) return;
+  const obj = adActual.hanzi;
+  if (v === obj) { responderAdivina(true); return; }
+  // acepta también si escribe el pinyin o el español (modo amable para teclados sin chino)
+  if (quitarTonos(v) === quitarTonos(adActual.pinyin) || v.toLowerCase() === adActual.es.split(' ')[0]) {
+    responderAdivina(false); return;
+  }
+  if (ev && ev.key === 'Enter') {
+    // no acertó: penaliza pero muestra la respuesta
+    adRacha = 0;
+    trackWord(adActual.hanzi, false);
+    trackGame('adivina', false);
+    document.getElementById('ad-feedback').textContent = `❌ Era ${adActual.hanzi} [${adActual.pinyin}] = ${adActual.es}`;
+    document.getElementById('ad-racha').textContent = adRacha;
+    setTimeout(nuevaAdivina, 1600);
+  }
+}
+function responderAdivina(descubrio) {
+  if (!adActual || adOk) return;
+  adOk = true;
+  document.getElementById('ad-input').disabled = true;
+  const bonusPorPista = 2; // cada pista extra revelada resta puntos
+  const pts = descubrio ? Math.max(3, 12 - adNivelPista * bonusPorPista) : 4;
+  const intro = document.getElementById('ad-intro');
+  intro.innerHTML = `<span class="ad-big">${adActual.hanzi}</span> <b>[${adActual.pinyin}]</b> = ${adActual.es}`;
+  adPts += pts;
+  if (descubrio) { adRacha++; addXP(pts); } else { adRacha = 0; addXP(2); }
+  trackWord(adActual.hanzi, descubrio);
+  trackGame('adivina', descubrio);
+  document.getElementById('ad-pts').textContent = adPts;
+  document.getElementById('ad-racha').textContent = adRacha;
+  document.getElementById('ad-feedback').textContent = descubrio
+    ? `✅ ${elogio()} Lo adivinaste con ${adNivelPista + 1} pista(s) · +${pts} pts` + (adRacha >= 3 ? ` 🔥 x${adRacha}` : '')
+    : `👏 Visto: +${pts} pts (sin pistas propias)`;
+  if (adPts > S.games.adivina.best) { S.games.adivina.best = adPts; save(); }
+  if (adPts >= 100) maybeAchv('adivino');
+  actualizarMenu();
+  setTimeout(nuevaAdivina, 1900);
+}
+function rendirseAdivina() {
+  if (!adActual || adOk) return;
+  document.getElementById('ad-input').disabled = true;
+  adOk = true; adRacha = 0;
+  const intro = document.getElementById('ad-intro');
+  intro.innerHTML = `<span class="ad-big">${adActual.hanzi}</span> <b>[${adActual.pinyin}]</b> = ${adActual.es}`;
+  trackWord(adActual.hanzi, false);
+  trackGame('adivina', false);
+  document.getElementById('ad-feedback').textContent = '🏳️ Sin problema: mira las pistas y vuelve a intentarlo otro día';
+  document.getElementById('ad-racha').textContent = adRacha;
+  setTimeout(nuevaAdivina, 1900);
+}
+
 // ================= CAMINO DUOLINGO: unidades + lecciones + corazones =================
 let lec = null; // {unit, level, queue:[{type,word}], idx, hearts, ok}
 const CICLO_TIPOS = ['quiz', 'escucha', 'pinyin', 'tono'];
 function tipoPara(level, i) {
   if (level === 1) return 'quiz';
   if (level === 2) return (i % 3 === 2) ? 'escucha' : 'quiz';
-  return CICLO_TIPOS[i % 4]; // nivel 3 y sesión diaria: mezcla completa
+  if (level === 3) return CICLO_TIPOS[i % 4]; // mezcla completa
+  // Nivel 4 "maestría": incluye también adivinar el carácter
+  const T5 = ['quiz', 'escucha', 'pinyin', 'tono', 'adivina'];
+  return T5[i % 5];
 }
 function unidadDesbloqueada(i) {
   if (i === 0) return true;
@@ -1053,7 +1168,11 @@ function empezarLeccion(uid, level) {
   while (elegidas.length < total) elegidas.push(rnd(words));
   lec = {
     unit: uid, level,
-    queue: elegidas.map((w, i) => ({ type: tipoPara(level, i), word: w })),
+    queue: elegidas.map((w, i) => {
+      let t = tipoPara(level, i);
+      if (t === 'adivina' && !ADIVINA_PISTAS[w.hanzi]) t = 'quiz'; // sin pistas para ese carácter
+      return { type: t, word: w };
+    }),
     idx: 0, hearts: corazonesInicio(), ok: 0
   };
   showView('leccion');
@@ -1094,7 +1213,7 @@ function pintarLeccion() {
   box.innerHTML = '';
   let lista = unitWords(lec.unit);
   if (lista.length < 4) lista = pool();
-  const dificil = lec.level === 3 || lec.unit === 'diaria';
+  const dificil = lec.level >= 3 || lec.unit === 'diaria';
   if (item.type === 'quiz') {
     const dirEs = lec.level >= 2 && Math.random() < 0.5;
     document.getElementById('lec-q').innerHTML = dirEs
@@ -1129,6 +1248,18 @@ function pintarLeccion() {
     const inp = document.getElementById('lec-input');
     inp.value = '';
     setTimeout(() => inp.focus(), 60);
+  } else if (item.type === 'adivina') {
+    const poolAd = lista.filter(x => ADIVINA_PISTAS[x.hanzi] && x.hanzi !== w.hanzi);
+    const opts = [...muestra(poolAd.length >= 3 ? poolAd : pool(), 3), w].sort(() => Math.random() - .5);
+    document.getElementById('lec-q').innerHTML = `🧐 Con estas pistas, ¿qué carácter es?<br><small>💡 ${ADIVINA_PISTAS[w.hanzi][0]}</small>` +
+      (pool().length ? '' : '');
+    opts.forEach(o => {
+      const b = document.createElement('button');
+      b.className = 'quiz-opt';
+      b.textContent = o.hanzi;
+      b.onclick = () => responderLeccion(o.hanzi === w.hanzi, b);
+      box.appendChild(b);
+    });
   } else { // tono
     document.getElementById('lec-q').innerHTML = `🔔 ¿Qué tono tiene <b>${w.hanzi}</b>? <button onclick="speak('${w.hanzi}')">🔊</button>`;
     pintarTonoOpts([1, 2, 3, 4].map(t => ({ t, hz: TONO_INFO[t].s, py: t + 'º', es: TONO_INFO[t].n.split('· ')[1] })),
@@ -1183,8 +1314,9 @@ function finLeccion(pass) {
       bonus = lec.level * 10 + stars * 5;
       maybeAchv('leccion1');
       if (cu.done >= 3) maybeAchv('unidad1');
-      if (lec.level < 3) {
-        sigBtn = `<button class="btn primary" onclick="empezarLeccion('${lec.unit}',${lec.level + 1})">Siguiente: Nivel ${lec.level + 1} →</button>`;
+      if (cu.done >= 4) maybeAchv('maestria');
+      if (lec.level < 4) {
+        sigBtn = `<button class="btn primary" onclick="empezarLeccion('${lec.unit}',${lec.level + 1})">Siguiente: Nivel ${lec.level + 1}${lec.level === 3 ? ' 🏯 Maestría' : ''} →</button>`;
       } else if (uIdx < UNIDADES.length - 1) {
         const nx = UNIDADES[uIdx + 1];
         sigBtn = `<button class="btn primary" onclick="empezarLeccion('${nx.id}',1)">Siguiente: ${nx.emoji} ${nx.nombre} →</button>`;
@@ -1222,13 +1354,14 @@ function renderRuta() {
     const sec = document.createElement('div');
     sec.className = 'ruta-unit' + (unlocked ? '' : ' locked');
     let nodos = '';
-    for (let L = 1; L <= 3; L++) {
+    for (let L = 1; L <= 4; L++) {
       const done = st.done >= L;
       const current = unlocked && st.done === L - 1;
       const cls = done ? 'done' : (current ? 'current' : 'locked');
       const inner = done ? ('★'.repeat(st.stars[L] || 1)) : (current ? L : '🔒');
-      nodos += `<button class="node ${cls}" ${done || current ? `onclick="empezarLeccion('${u.id}',${L})"` : ''} title="Nivel ${L}">${inner}</button>`;
-      if (L < 3) nodos += '<span class="node-link"></span>';
+      const label = done ? inner : (current ? (L === 4 ? '🏯' : L) : '🔒');
+      nodos += `<button class="node ${cls}" ${done || current ? `onclick="empezarLeccion('${u.id}',${L})"` : ''} title="${L === 4 ? 'Nivel 4 · Maestría' : 'Nivel ' + L}">${label}</button>`;
+      if (L < 4) nodos += '<span class="node-link"></span>';
     }
     sec.innerHTML = `<div class="ruta-head"><span class="ruta-emoji">${unlocked ? u.emoji : '🔒'}</span><div><b>${u.nombre}</b><small>${u.desc} · ${words} palabras</small></div></div><div class="ruta-nodes">${nodos}</div>`;
     wrap.appendChild(sec);
@@ -1241,7 +1374,7 @@ function renderRuta() {
   });
   document.getElementById('ruta-resumen').textContent = units === 0
     ? 'Empieza por 👋 Saludos y desbloquea el resto'
-    : `Unidades abiertas: ${units}/${UNIDADES.length} · ⭐ ${stars}/72`;
+    : `Unidades abiertas: ${units}/${UNIDADES.length} · ⭐ ${stars}/${UNIDADES.length * 4 * 3}`;
 }
 
 // ===== Atajos de teclado =====
@@ -1364,6 +1497,7 @@ function renderProgreso() {
     fila('🔔 Tonos', 'tonos', S.games.tonos.best + ' pts récord') +
     fila('🎤 Pronuncia', 'pronuncia', S.games.pronuncia.best + ' pts récord') +
     fila('✍️ Escribe', 'escribe', S.games.escribe.best + ' pts récord') +
+    fila('🧐 Adivina', 'adivina', S.games.adivina.best + ' pts récord') +
     fila('🃏 Memorama', 'mem', (S.games.mem.best[S.ui.memPairs || 8] ? ('récord ' + S.games.mem.best[S.ui.memPairs || 8]) : 'sin récord')) +
     fila('📇 Flashcards', 'flash', S.games.flash.vistas + ' vistas');
 
@@ -1573,7 +1707,7 @@ function onImportFile(input) {
   });
 }
 function resetDato(tipo) {
-  const nombres = { quiz: 'Quiz', escucha: 'Escucha', pinyin: 'Pinyin', tonos: 'Tonos', pronuncia: 'Pronuncia', escribe: 'Escribe', mem: 'Memorama', flash: 'Flashcards', palabras: 'stats de palabras', cultura: 'poemas leídos' };
+  const nombres = { quiz: 'Quiz', escucha: 'Escucha', pinyin: 'Pinyin', tonos: 'Tonos', pronuncia: 'Pronuncia', escribe: 'Escribe', adivina: 'Adivina el carácter', mem: 'Memorama', flash: 'Flashcards', palabras: 'stats de palabras', cultura: 'poemas leídos' };
   if (!confirm('¿Resetear ' + (nombres[tipo] || tipo) + '?')) return;
   if (tipo === 'palabras') resetPalabras();
   else if (tipo === 'cultura') { S.cultura = { leidos: [] }; save(); }
@@ -1630,6 +1764,7 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
     if (j === 'pinyin') nuevaPinyin();
     if (j === 'tonos') { if (tModo === 'pares') nuevoPar(); else nuevoTono(); }
     if (j === 'pronuncia') nuevaPronuncia();
+    if (j === 'adivina') nuevaAdivina();
   }
 })();
 aplicarTema(S.ui.tema || 'light');
@@ -1647,6 +1782,7 @@ nuevoMazoFlash();
 nuevoTono();
 nuevaPronuncia();
 nuevaEscribe();
+nuevaAdivina();
 prRec = initRec();
 mostrarOnboard();
 document.getElementById('f-vistas').textContent = S.games.flash.vistas;

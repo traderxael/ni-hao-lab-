@@ -65,6 +65,7 @@
       <button onclick="showView('tonos')" class="nav-btn" id="btn-tonos"><span>🔔</span>Tonos</button>
       <button onclick="showView('pronuncia')" class="nav-btn" id="btn-pronuncia"><span>🎤</span>Pronuncia</button>
       <button onclick="showView('escribe')" class="nav-btn" id="btn-escribe"><span>✍️</span>Escribe</button>
+      <button onclick="showView('adivina')" class="nav-btn" id="btn-adivina"><span>🧐</span>Adivina</button>
       <button onclick="showView('tienda')" class="nav-btn" id="btn-tienda"><span>🪙</span>Tienda</button>
       <button onclick="showView('flash')" class="nav-btn" id="btn-flash"><span>📇</span>Fichas</button>
       <button onclick="showView('cultura')" class="nav-btn" id="btn-cultura"><span>🏮</span>Cultura</button>
@@ -88,6 +89,7 @@
             <option value="0">HSK1 + HSK2</option>
             <option value="1">Solo HSK1</option>
             <option value="2">Solo HSK2</option>
+            <option value="3">Solo HSK3</option>
           </select>
           <label for="filtro-cat">Tema</label>
           <select id="filtro-cat" onchange="cambiarFiltro()">
@@ -189,6 +191,14 @@
           <p>Traza el carácter sobre la guía: se puntúa tu tinta.</p>
           <div class="record">🏆 <span id="record-escribe">0 pts</span></div>
           <span class="card-cta">Trazar <i>→</i></span>
+        </article>
+
+        <article class="card" style="--c1:#e84393;--c2:#fd79a8" onclick="showView('adivina')">
+          <div class="card-emoji">🧐</div>
+          <h3>Adivina el carácter</h3>
+          <p>Pistas de radicales y componentes: descubre de qué hànzì se trata.</p>
+          <div class="record">🏆 <span id="record-adivina">0 pts</span></div>
+          <span class="card-cta">Jugar <i>→</i></span>
         </article>
 
         <article class="card" style="--c1:#f5a623;--c2:#ffd34d" onclick="showView('tienda')">
@@ -441,6 +451,30 @@
       </div>
     </section>
 
+    <!-- ============ ADIVINA EL CARÁCTER ============ -->
+    <section id="view-adivina" class="view">
+      <div class="view-head">
+        <div><h2>🧐 Adivina el carácter</h2><p class="subtitle">Te damos pistas de sus piezas (radicales). Escríbelo antes de necesitar todas. +12 pts sin pistas extra.</p></div>
+        <button class="btn ghost" onclick="showView('menu')">← Menú</button>
+      </div>
+      <div class="stats">
+        <span class="stat">⭐ Puntos <b id="ad-pts">0</b></span>
+        <span class="stat">🔥 Racha <b id="ad-racha">0</b></span>
+        <span class="stat">📚 <b id="ad-n">—</b></span>
+      </div>
+      <div class="repaso-banner hidden">🎯 Modo repaso: <b class="repaso-count"></b> <button class="btn ghost sm" onclick="salirRepaso()">Salir ✕</button></div>
+      <div id="ad-intro" class="ad-intro">¿Qué carácter es?</div>
+      <div id="ad-pistas" class="ad-pistas"></div>
+      <div class="pinyin-box ad-answer-box">
+        <input id="ad-input" class="ad-input" autocomplete="off" spellcheck="false" placeholder="escribe el carácter (o pinyin/español)… " oninput="comprobarAdivinaTecla()" onkeydown="comprobarAdivinaTecla(event)" />
+      </div>
+      <div id="ad-feedback" class="ch-result" aria-live="polite"></div>
+      <div class="controls">
+        <button class="btn" id="ad-maspista" onclick="revelarPista()">💡 Otra pista (-2 pts)</button>
+        <button class="btn ghost" onclick="rendirseAdivina()">🏳️ Ver respuesta</button>
+      </div>
+    </section>
+
     <!-- ============ FLASHCARDS ============ -->
     <section id="view-flash" class="view">
       <div class="view-head">
@@ -600,7 +634,7 @@
 
   <footer>
     <span class="footer-zh">学中文，玩得开心</span>
-    <span>NiHao Lab · 150 palabras HSK1+HSK2 · Voz del navegador · Progreso guardado en tu equipo</span>
+    <span>NiHao Lab · 190 palabras HSK1–HSK3 · Voz del navegador · Progreso guardado en tu equipo</span>
   </footer>
 
   <div id="onboard" class="onboard hidden" role="dialog" aria-modal="true" aria-labelledby="ob-t">

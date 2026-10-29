@@ -583,3 +583,13 @@ html[data-theme="dark"] .daily-cta { color: var(--ink); }
 .stroke-status { min-height: 2.7em; margin: 9px 0 0; color: var(--ink-2); font-size: .82rem; line-height: 1.4; }
 .es-dibujo-title { margin: 22px 0 4px; }
 @media (max-width: 480px) { .header-actions { gap: 5px; } .install-app { padding-inline: 9px; font-size: .75rem; } .stroke-learning { padding: 14px; } }
+
+
+/* ===== 🧐 Adivina el carácter ===== */
+.ad-intro { font-size: 1.05rem; text-align: center; margin: 6px 0 12px; color: var(--ink); }
+.ad-big { font-family: var(--zh, 'Noto Sans SC', sans-serif); font-size: 3.2rem; vertical-align: middle; color: #e84393; }
+.ad-pistas { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.ad-pista { background: rgba(232,67,147,.08); border: 1px solid rgba(232,67,147,.25); border-radius: 12px; padding: 10px 14px; font-size: .92rem; line-height: 1.4; }
+.ad-answer-box { display: flex; justify-content: center; }
+.ad-input { width: min(420px, 100%); font-size: 1.35rem; text-align: center; padding: 12px 16px; border-radius: 14px; border: 2px solid var(--line); background: var(--card, #fff); color: var(--ink); }
+.ad-input:focus { outline: none; border-color: #e84393; box-shadow: 0 0 0 4px rgba(232,67,147,.15); }
