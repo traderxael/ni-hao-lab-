@@ -22,6 +22,7 @@ function defaultStore() {
       tonos:   { best: 0, played: 0, ok: 0 },
       pronuncia: { best: 0, played: 0, ok: 0 },
       escribe: { best: 0, played: 0, ok: 0 },
+      adivina: { best: 0, played: 0, ok: 0 },
       mem:     { best: {}, wins: 0 },
       flash:   { vistas: 0 }
     },
@@ -64,6 +65,12 @@ function loadStore() {
     if (raw) {
       const S = Object.assign(defaultStore(), JSON.parse(raw));
       S.games = Object.assign(defaultStore().games, S.games);
+      // saneado: cada juego conserva solo sus campos conocidos
+      Object.keys(S.games).forEach(k => {
+        const base = defaultStore().games[k];
+        if (!base) { delete S.games[k]; return; }
+        S.games[k] = Object.assign(JSON.parse(JSON.stringify(base)), S.games[k]);
+      });
       S.ui = Object.assign({ tema: 'light', sonido: true, cat: 'todas', memPairs: 8 }, S.ui);
       // normaliza récord antiguo de memorama (string -> por nivel)
       if (typeof S.games.mem.best === 'string') S.games.mem.best = S.games.mem.best ? { 8: S.games.mem.best } : {};
@@ -75,8 +82,19 @@ function loadStore() {
 }
 
 let S = loadStore();
-function save() {
+// Save con debounce: agrupa escrituras seguidas en una sola (menos bloqueos de main thread)
+let _saveTimer = null;
+function writeNow() {
+  clearTimeout(_saveTimer); _saveTimer = null;
   try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) {}
+}
+function save() {
+  if (_saveTimer) return;       // ya hay una escritura en cola
+  _saveTimer = setTimeout(writeNow, 150);
+}
+if (typeof document !== 'undefined') {
+  // nunca perder datos al cerrar/minimizar
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') writeNow(); });
 }
 
 // ===== Fecha local YYYY-MM-DD =====
@@ -181,8 +199,16 @@ function weakWords(list, n) {
 // ===== Distractores adaptativos =====
 // Si vas bien (precisión alta), los distractores se parecen: misma
 // categoría, carácter compartido o misma inicial de pinyin.
+const _poolCache = new WeakMap();
+function _restoDe(list, correcta) {
+  let map = _poolCache.get(list);
+  if (!map) { map = new Map(); _poolCache.set(list, map); }
+  let arr = map.get(correcta.hanzi);
+  if (!arr) { arr = list.filter(w => w.hanzi !== correcta.hanzi); map.set(correcta.hanzi, arr); }
+  return arr;
+}
 function distractores(correcta, list, n, dificil) {
-  const resto = list.filter(w => w.hanzi !== correcta.hanzi);
+  const resto = _restoDe(list, correcta);
   if (!dificil) return [...resto].sort(() => Math.random() - 0.5).slice(0, n);
   const ini = s => (s || '').toLowerCase().replace(/[^a-z]/g, '').charAt(0);
   const puntaje = w => {
@@ -216,6 +242,8 @@ const LOGROS = [
   { id: 'voz',         emoji: '🎤', nombre: 'Buena voz', desc: 'Acierta 3 pronunciaciones con el micro' },
   { id: 'trazo',       emoji: '✍️', nombre: 'Calígrafo', desc: 'Completa 3 trazados con ≥60% de cobertura' },
   { id: 'mercader',    emoji: '🪙', nombre: 'Cliente frecuente', desc: 'Gasta 100 monedas en la tienda' },
+  { id: 'adivino',     emoji: '🧐', nombre: 'Adivino', desc: 'Consigue 100 puntos en 🧐 Adivina el carácter' },
+  { id: 'maestria',    emoji: '🏯', nombre: 'Maestría HSK3', desc: 'Supera el nivel 4 (maestría) de una unidad' },
 ];
 // Devuelve true si es nuevo desbloqueo
 function desbloquear(id) {
@@ -236,7 +264,7 @@ function exportarProgreso() {
   a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
   S.lastBackup = new Date().toISOString();
-  save();
+  writeNow();
 }
 function importarProgreso(file, cb) {
   const r = new FileReader();
@@ -248,7 +276,7 @@ function importarProgreso(file, cb) {
       S.games = Object.assign(defaultStore().games, d.state.games);
       S.ui = Object.assign({ tema: 'light', sonido: true, cat: 'todas', memPairs: 8 }, d.state.ui);
       if (typeof S.games.mem.best === 'string') S.games.mem.best = S.games.mem.best ? { 8: S.games.mem.best } : {};
-      save();
+      writeNow();
       cb(null);
     } catch (e) { cb(e); }
   };
@@ -257,9 +285,9 @@ function importarProgreso(file, cb) {
 }
 function resetJuego(g) {
   const base = defaultStore().games[g];
-  if (base !== undefined) { S.games[g] = JSON.parse(JSON.stringify(base)); save(); }
+  if (base !== undefined) { S.games[g] = JSON.parse(JSON.stringify(base)); writeNow(); }
 }
-function resetPalabras() { S.words = {}; save(); }
+function resetPalabras() { S.words = {}; writeNow(); }
 function borrarTodoNuevo() {
   localStorage.removeItem(STORE_KEY);
   localStorage.removeItem(BACKUP_KEY);
