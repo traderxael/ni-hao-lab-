@@ -269,7 +269,7 @@ html[data-theme="dark"] .play-btn { color: #101113; }
 }
 .flash-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
 .flash-tag { position: absolute; top: 14px; right: 16px; font-size: .66rem; letter-spacing: .09em; text-transform: uppercase; font-weight: 700; color: var(--ink-2); }
-.flash-front { font-size: clamp(3.4rem, 17vw, 5.2rem); font-weight: 500; line-height: 1.15; }
+.flash-front { font-size: clamp(4rem, 18vw, 6rem); font-weight: 500; line-height: 1.15; }
 .flash-back { font-size: 1.5rem; font-weight: 700; line-height: 1.6; animation: aparecer .3s var(--ease); }
 .flash-back .hanzi { font-size: 2.6rem; font-weight: 500; display: inline-block; margin-bottom: 4px; color: var(--sello); }
 .flash-back small { display: inline-block; margin-top: 8px; font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); background: var(--surface-2); padding: 4px 12px; border-radius: 999px; }

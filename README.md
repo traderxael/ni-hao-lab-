@@ -27,7 +27,7 @@ App web para aprender chino mandarín (**HSK1 + HSK2**, 150 palabras) jugando. S
 | 🔔 Tonos | El corazón del chino: distingue 1º–4º tono |
 | 🎤 Pronuncia | Shadowing con reconocimiento de voz zh-CN |
 | ✍️ Escribe | Traza el carácter: score por cobertura de tinta real |
-| 📇 Flashcards | Repaso con SRS y modo débiles |
+| 📇 Flashcards | Repaso con SRS, modo débiles y modo 🀄 Hanzi: solo caracteres de 1 trazo (frente hanzi puro, dorso con pinyin + radical + frase) |
 | 🛤️ Ruta | 8 unidades × 3 niveles estilo Duolingo, con corazones |
 | 🏮 Cultura | 5 poemas Tang con audio + fiestas y costumbres |
 
