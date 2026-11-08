@@ -1272,15 +1272,31 @@ document.addEventListener('keydown', e => {
 });
 
 // ================= FLASHCARDS =================
-let fMazo = [], fIdx = 0, fVolteada = false;
+let fMazo = [], fIdx = 0, fVolteada = false, fModoHanzi = false;
+function poolHanzi() {
+  const uno = pool().filter(w => [...w.hanzi].length === 1);
+  return uno.length >= 4 ? uno : pool();
+}
+function setModoHanzi(on) {
+  fModoHanzi = !!on;
+  const b = document.getElementById('f-modo-hanzi');
+  if (b) {
+    b.classList.toggle('toggle-on', fModoHanzi);
+    b.setAttribute('aria-pressed', String(fModoHanzi));
+  }
+  nuevoMazoFlash();
+  if (fModoHanzi) toastLogro('🀄 Modo Hanzi: solo caracteres de 1 trazo');
+}
+function baseFlash() { return fModoHanzi ? poolHanzi() : pool(); }
 function nuevoMazoFlash() {
-  fMazo = muestra(pool(), 20);
+  fMazo = muestra(baseFlash(), 20);
   fIdx = 0; fVolteada = false;
   mostrarFlash();
 }
 function mazoDebiles() {
-  const deb = weakWords(pool(), 20);
-  fMazo = deb.length >= 4 ? deb : srsPick(pool(), 20);
+  const base = baseFlash();
+  const deb = weakWords(base, 20);
+  fMazo = deb.length >= 4 ? deb : srsPick(base, 20);
   fIdx = 0; fVolteada = false;
   showView('flash');
   mostrarFlash();
