@@ -1,5 +1,5 @@
 /* NiHao Lab · Service Worker: la app funciona sin internet tras la 1ª visita */
-const CACHE = 'nihao-v8';
+const CACHE = 'nihao-v9';
 const HANZI_WRITER_ORIGIN = 'https://cdn.jsdelivr.net';
 const HANZI_WRITER_SCRIPT = 'https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js';
 const ASSETS = [

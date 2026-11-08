@@ -845,11 +845,11 @@ function cargarPracticaTrazos(char) {
     drawingColor: '#20242b', drawingWidth: 5, strokeAnimationSpeed: 1,
     charDataLoader: (character, onComplete) => {
       const url = 'https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/' + encodeURIComponent(character) + '.json';
-      const cached = window.caches ? caches.open('nihao-v8').then(cache => cache.match(url)) : Promise.resolve(null);
+      const cached = window.caches ? caches.open('nihao-v9').then(cache => cache.match(url)) : Promise.resolve(null);
       cached.then(hit => hit ? hit.json() : fetch(url).then(response => {
         if (!response.ok) throw new Error('No se pudieron cargar los trazos');
         const copy = response.clone();
-        if (window.caches) caches.open('nihao-v8').then(cache => cache.put(url, copy)).catch(() => {});
+        if (window.caches) caches.open('nihao-v9').then(cache => cache.put(url, copy)).catch(() => {});
         return response.json();
       })).then(onComplete).catch(() => {
         if (request === strokeRequest) status.textContent = 'No se pudo cargar este carácter. Conéctate y vuelve a intentarlo; los caracteres ya vistos quedan disponibles sin conexión.';
