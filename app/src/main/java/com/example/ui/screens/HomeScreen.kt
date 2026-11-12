@@ -30,6 +30,7 @@ import com.example.data.StoreRepository
 import com.example.data.VocabData
 import com.example.ui.components.ConfettiOverlay
 import com.example.ui.components.FilterChipsRow
+import com.example.ui.components.PracticaRapidaModal
 import com.example.ui.components.StreakCelebrationDialog
 import com.example.ui.components.StreakHomeCard
 import com.example.ui.theme.AccentBlue
@@ -56,6 +57,7 @@ fun HomeScreen(
     val pool = store.getFilteredPool()
     val dueCount = store.repasoDebido()
     var showMetodo by remember { mutableStateOf(false) }
+    var showPracticaRapida by remember { mutableStateOf(false) }
     val currentCatObj = VocabData.CATEGORIAS_TEMATICAS.find { it.id == state.filtroCat }
 
     val streakCelebration by store.streakCelebrationEvent.collectAsState()
@@ -82,6 +84,7 @@ fun HomeScreen(
         ),
         GameCardItem("memorama", "🃏", "Memorama", "Une cada 汉字 con su traducción en español.", "mem", Color(0xFF6C5CE7)),
         GameCardItem("quiz", "✅", "Quiz", "Opción múltiple en ambos sentidos. Racha = doble XP.", "quiz", AccentBlue),
+        GameCardItem("practica_rapida", "⚡", "Práctica rápida", "Sesión especial de 3 preguntas de palabras débiles.", "practica_rapida", GoldYellow),
         GameCardItem("escucha", "🔊", "Escucha", "Oye la palabra y elige qué significa.", "escucha", SuccessGreen),
         GameCardItem("pinyin", "⌨️", "Escribe pinyin", "Lee el carácter y teclea su pronunciación.", "pinyin", Color(0xFFE17055)),
         GameCardItem("tonos", "🔔", "Tonos", "Escucha y elige el tono (1º-4º) o pares mínimos.", "tonos", GoldYellow),
@@ -228,16 +231,17 @@ fun HomeScreen(
             }
         }
 
-        // Práctica Rápida Shortcut
+        // Práctica Rápida in Menu
         item(span = { GridItemSpan(maxLineSpan) }) {
             Surface(
                 shape = RoundedCornerShape(18.dp),
                 color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp, GoldYellow.copy(alpha = 0.5f)),
-                shadowElevation = 1.dp,
+                border = BorderStroke(1.5.dp, GoldYellow.copy(alpha = 0.7f)),
+                shadowElevation = 2.dp,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onNavigate("cuaderno") }
+                    .clip(RoundedCornerShape(18.dp))
+                    .clickable { showPracticaRapida = true }
                     .testTag("home_practica_rapida_shortcut")
             ) {
                 Row(
@@ -247,7 +251,8 @@ fun HomeScreen(
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.weight(1f)
                     ) {
                         Text(text = "⚡", fontSize = 26.sp)
                         Column {
@@ -256,9 +261,9 @@ fun HomeScreen(
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Text(
-                                    text = "Práctica Rápida",
+                                    text = "Práctica rápida",
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp,
+                                    fontSize = 15.sp,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Surface(
@@ -275,17 +280,29 @@ fun HomeScreen(
                                 }
                             }
                             Text(
-                                text = "Refuerza tus palabras débiles en el cuaderno",
+                                text = "Sesión especial enfocada solo en palabras débiles",
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = "Ir a cuaderno",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+
+                    Button(
+                        onClick = { showPracticaRapida = true },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = SelloRed),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                        modifier = Modifier
+                            .height(40.dp)
+                            .testTag("practica_rapida_button")
+                    ) {
+                        Text(
+                            text = "Práctica rápida",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
                 }
             }
         }
@@ -337,6 +354,7 @@ fun HomeScreen(
             val recordText = when (card.id) {
                 "memorama" -> store.memBestMap[state.memPairs] ?: "—"
                 "quiz" -> "${store.gameStatsMap["quiz"]?.best ?: 0} pts"
+                "practica_rapida" -> "${store.getDebilWords().size} débiles"
                 "escucha" -> "${store.gameStatsMap["escucha"]?.best ?: 0} pts"
                 "pinyin" -> "${store.gameStatsMap["pinyin"]?.best ?: 0} pts"
                 "tonos" -> "${store.gameStatsMap["tonos"]?.best ?: 0} pts"
@@ -360,7 +378,13 @@ fun HomeScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(18.dp))
-                    .clickable { onNavigate(card.id) }
+                    .clickable {
+                        if (card.id == "practica_rapida") {
+                            showPracticaRapida = true
+                        } else {
+                            onNavigate(card.id)
+                        }
+                    }
                     .testTag("card_${card.id}")
             ) {
                 Column(
@@ -428,6 +452,15 @@ fun HomeScreen(
             confettiTrigger = confettiTrigger,
             onClaim = { store.claimStreakBonus() },
             onDismiss = { store.dismissStreakCelebration() }
+        )
+    }
+
+    // Modal de Práctica Rápida iniciada desde el menú
+    if (showPracticaRapida && ttsManager != null) {
+        PracticaRapidaModal(
+            store = store,
+            ttsManager = ttsManager,
+            onDismiss = { showPracticaRapida = false }
         )
     }
 }

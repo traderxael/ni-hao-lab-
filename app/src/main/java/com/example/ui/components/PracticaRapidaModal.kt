@@ -59,21 +59,25 @@ fun PracticaRapidaModal(
     var testedWords by remember { mutableStateOf<List<Pair<Word, Boolean>>>(emptyList()) }
 
     fun generateQuestions() {
-        val debiles = store.getDebilWords()
+        val debiles = store.getDebilWords().ifEmpty {
+            // Si el usuario aún no tiene débiles marcadas, pre-poblar ejemplos desafiantes
+            store.seedDefaultDebilWords()
+            store.getDebilWords()
+        }
         val allVocab = VocabData.VOCAB
 
-        // Take up to 3 weak words
+        // Tomar exactamente 3 preguntas enfocadas únicamente en palabras con estado 'débil'
         val selectedTargets = if (debiles.isNotEmpty()) {
             val shuffledDebiles = debiles.shuffled()
             if (shuffledDebiles.size >= 3) {
                 shuffledDebiles.take(3)
             } else {
-                // Pad with challenging words if fewer than 3 are currently weak
-                val needed = 3 - shuffledDebiles.size
-                val fillers = allVocab.filter { w -> !shuffledDebiles.any { it.hanzi == w.hanzi } }
-                    .shuffled()
-                    .take(needed)
-                shuffledDebiles + fillers
+                // Si hay menos de 3 palabras débiles, repetir únicamente de la lista de débiles
+                val list = mutableListOf<Word>()
+                while (list.size < 3) {
+                    list.addAll(shuffledDebiles)
+                }
+                list.take(3)
             }
         } else {
             emptyList()

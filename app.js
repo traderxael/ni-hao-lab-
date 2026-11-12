@@ -144,6 +144,13 @@ function confeti() {
 }
 
 // ===== Tema y sonido =====
+function detectarTemaSistema() {
+  try {
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  } catch (e) {
+    return 'light';
+  }
+}
 function aplicarTema(t) {
   document.documentElement.setAttribute('data-theme', t);
   const b = document.getElementById('btn-tema');
@@ -153,6 +160,7 @@ function aplicarTema(t) {
 }
 function toggleTema() {
   const act = document.documentElement.getAttribute('data-theme') || 'light';
+  S.ui.temaManual = true;
   aplicarTema(act === 'dark' ? 'light' : 'dark');
 }
 function toggleSonido() {
@@ -1648,7 +1656,21 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
     if (j === 'pronuncia') nuevaPronuncia();
   }
 })();
-aplicarTema(S.ui.tema || 'light');
+(function initTema() {
+  const esPrimerAcceso = !localStorage.getItem(STORE_KEY);
+  const temaInicial = (esPrimerAcceso || !S.ui.tema) ? detectarTemaSistema() : S.ui.tema;
+  aplicarTema(temaInicial);
+  try {
+    const mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+    if (mq) {
+      const onMediaChange = e => {
+        if (!S.ui.temaManual) aplicarTema(e.matches ? 'dark' : 'light');
+      };
+      if (mq.addEventListener) mq.addEventListener('change', onMediaChange);
+      else if (mq.addListener) mq.addListener(onMediaChange);
+    }
+  } catch (e) {}
+})();
 initCats();
 initTonoBtns();
 (function initSonido() {

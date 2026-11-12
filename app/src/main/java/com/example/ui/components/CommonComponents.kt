@@ -51,6 +51,7 @@ fun AppHeader(
     onToggleTheme: () -> Unit,
     onOpenTienda: () -> Unit,
     onOpenStreak: () -> Unit = {},
+    onOpenPracticaRapida: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val nivel = (state.xp / 100) + 1
@@ -104,6 +105,19 @@ fun AppHeader(
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (onOpenPracticaRapida != null) {
+                    IconButton(
+                        onClick = onOpenPracticaRapida,
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(GoldYellow.copy(alpha = 0.25f))
+                            .testTag("menu_practica_rapida_button")
+                    ) {
+                        Text(text = "⚡", fontSize = 16.sp)
+                    }
+                }
+
                 IconButton(
                     onClick = onToggleSound,
                     modifier = Modifier

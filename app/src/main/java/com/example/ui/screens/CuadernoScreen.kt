@@ -1,6 +1,9 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -8,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -20,13 +24,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import com.example.audio.TtsManager
 import com.example.data.StoreRepository
 import com.example.data.VocabData
+import com.example.data.model.Word
 import com.example.ui.components.AppIcons
 import com.example.ui.components.PracticaRapidaModal
 import com.example.ui.theme.AccentBlue
@@ -236,136 +243,42 @@ fun CuadernoScreen(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // Words List
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            items(filteredList) { word ->
-                val progress = store.cajaEntry(word.hanzi)
-                val status = store.wordStatus(word.hanzi)
-                val isExpanded = expandedWord == word.hanzi
+        val filterKey = "${selectedFilter}_${searchQuery.trim()}"
 
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    shadowElevation = 1.dp,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .clickable { expandedWord = if (isExpanded) null else word.hanzi }
-                ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Text(
-                                    text = word.hanzi,
-                                    fontSize = 24.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = SelloRed
-                                )
-                                Column {
-                                    Text(
-                                        text = word.pinyin,
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = AccentBlue
-                                    )
-                                    Text(
-                                        text = word.es,
-                                        fontSize = 14.sp,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                            }
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Surface(
-                                    shape = CircleShape,
-                                    color = when (status) {
-                                        "dominada" -> SuccessGreen.copy(alpha = 0.15f)
-                                        "debil" -> Color(0xFFE5484D).copy(alpha = 0.15f)
-                                        "aprendiendo" -> GoldYellow.copy(alpha = 0.15f)
-                                        else -> MaterialTheme.colorScheme.surfaceVariant
-                                    }
-                                ) {
-                                    Text(
-                                        text = if (status == "debil") "⚠️ Débil" else "Caja ${progress.box}",
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = when (status) {
-                                            "dominada" -> SuccessGreen
-                                            "debil" -> Color(0xFFE5484D)
-                                            "aprendiendo" -> GoldYellow
-                                            else -> MaterialTheme.colorScheme.onSurfaceVariant
-                                        },
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                    )
-                                }
-
-                                IconButton(
-                                    onClick = { ttsManager.speak(word.hanzi) },
-                                    modifier = Modifier.size(32.dp)
-                                ) {
-                                    Icon(AppIcons.volumeUp, contentDescription = "Audio", tint = AccentBlue, modifier = Modifier.size(18.dp))
-                                }
-                            }
+        // Words List with entrance animation (opacidad y desplazamiento)
+        if (filteredList.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 40.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No se encontraron palabras con este criterio",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        } else {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                itemsIndexed(
+                    items = filteredList,
+                    key = { _, word -> word.hanzi }
+                ) { index, word ->
+                    CuadernoWordCard(
+                        word = word,
+                        index = index,
+                        filterKey = filterKey,
+                        store = store,
+                        ttsManager = ttsManager,
+                        isExpanded = expandedWord == word.hanzi,
+                        onToggleExpand = {
+                            expandedWord = if (expandedWord == word.hanzi) null else word.hanzi
                         }
-
-                        // Expanded Info
-                        if (isExpanded) {
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                if (word.rad != null) {
-                                    Text("Radical: ${word.rad} — ${word.mnemo ?: ""}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                                if (word.fr != null) {
-                                    Text("Ejemplo: ${word.fr.hz} (${word.fr.py})", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
-                                    Text(word.fr.es, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "Aciertos: ${progress.ok} · Fallos: ${progress.fail}",
-                                        fontSize = 11.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-
-                                    OutlinedButton(
-                                        onClick = { store.toggleMarcarDebil(word.hanzi) },
-                                        shape = RoundedCornerShape(10.dp),
-                                        colors = ButtonDefaults.outlinedButtonColors(
-                                            contentColor = if (status == "debil") Color(0xFFE5484D) else AccentBlue
-                                        ),
-                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                                        modifier = Modifier
-                                            .height(34.dp)
-                                            .testTag("toggle_debil_${word.hanzi}")
-                                    ) {
-                                        Text(
-                                            text = if (status == "debil") "Quitar de débiles" else "Marcar débil ⚠️",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    )
                 }
             }
         }
@@ -377,5 +290,161 @@ fun CuadernoScreen(
             ttsManager = ttsManager,
             onDismiss = { showPracticaRapida = false }
         )
+    }
+}
+
+@Composable
+private fun CuadernoWordCard(
+    word: Word,
+    index: Int,
+    filterKey: String,
+    store: StoreRepository,
+    ttsManager: TtsManager,
+    isExpanded: Boolean,
+    onToggleExpand: () -> Unit
+) {
+    val progress = store.cajaEntry(word.hanzi)
+    val status = store.wordStatus(word.hanzi)
+
+    // Animación suave de entrada (opacidad y desplazamiento vertical estilo transición CSS)
+    val animProgress = remember(filterKey, word.hanzi) { Animatable(0f) }
+
+    LaunchedEffect(filterKey, word.hanzi) {
+        val staggerDelay = (index.coerceAtMost(8) * 35L)
+        delay(staggerDelay)
+        animProgress.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(
+                durationMillis = 340,
+                easing = FastOutSlowInEasing
+            )
+        )
+    }
+
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 1.dp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                alpha = animProgress.value
+                translationY = (1f - animProgress.value) * 28.dp.toPx()
+            }
+            .clip(RoundedCornerShape(16.dp))
+            .clickable { onToggleExpand() }
+            .testTag("word_card_${word.hanzi}")
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = word.hanzi,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = SelloRed
+                    )
+                    Column {
+                        Text(
+                            text = word.pinyin,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AccentBlue
+                        )
+                        Text(
+                            text = word.es,
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = when (status) {
+                            "dominada" -> SuccessGreen.copy(alpha = 0.15f)
+                            "debil" -> Color(0xFFE5484D).copy(alpha = 0.15f)
+                            "aprendiendo" -> GoldYellow.copy(alpha = 0.15f)
+                            else -> MaterialTheme.colorScheme.surfaceVariant
+                        }
+                    ) {
+                        Text(
+                            text = if (status == "debil") "⚠️ Débil" else "Caja ${progress.box}",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = when (status) {
+                                "dominada" -> SuccessGreen
+                                "debil" -> Color(0xFFE5484D)
+                                "aprendiendo" -> GoldYellow
+                                else -> MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = { ttsManager.speak(word.hanzi) },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(AppIcons.volumeUp, contentDescription = "Audio", tint = AccentBlue, modifier = Modifier.size(18.dp))
+                    }
+                }
+            }
+
+            // Expanded Info
+            if (isExpanded) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (word.rad != null) {
+                        Text("Radical: ${word.rad} — ${word.mnemo ?: ""}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    if (word.fr != null) {
+                        Text("Ejemplo: ${word.fr.hz} (${word.fr.py})", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                        Text(word.fr.es, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Aciertos: ${progress.ok} · Fallos: ${progress.fail}",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        OutlinedButton(
+                            onClick = { store.toggleMarcarDebil(word.hanzi) },
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = if (status == "debil") Color(0xFFE5484D) else AccentBlue
+                            ),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            modifier = Modifier
+                                .height(34.dp)
+                                .testTag("toggle_debil_${word.hanzi}")
+                        ) {
+                            Text(
+                                text = if (status == "debil") "Quitar de débiles" else "Marcar débil ⚠️",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }

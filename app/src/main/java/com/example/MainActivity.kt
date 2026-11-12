@@ -19,6 +19,7 @@ import com.example.data.StoreRepository
 import com.example.ui.components.AppHeader
 import com.example.ui.components.AppIcons
 import com.example.ui.components.ConfettiOverlay
+import com.example.ui.components.PracticaRapidaModal
 import com.example.ui.components.ToastNotification
 import com.example.ui.screens.*
 import com.example.ui.theme.NiHaoLabTheme
@@ -51,6 +52,7 @@ class MainActivity : ComponentActivity() {
 
             NiHaoLabTheme(darkTheme = state.isDarkTheme) {
                 var currentRoute by remember { mutableStateOf("home") }
+                var showGlobalPracticaRapida by remember { mutableStateOf(false) }
 
                 val navItems = listOf(
                     NavItem("home", "Inicio") { Icon(Icons.Default.Home, contentDescription = "Inicio") },
@@ -76,7 +78,8 @@ class MainActivity : ComponentActivity() {
                                 onOpenStreak = {
                                     currentRoute = "home"
                                     store.triggerStreakCelebrationManual()
-                                }
+                                },
+                                onOpenPracticaRapida = { showGlobalPracticaRapida = true }
                             )
                         }
                     },
@@ -181,11 +184,32 @@ class MainActivity : ComponentActivity() {
                                 state = state,
                                 onBack = { currentRoute = "home" }
                             )
+                            "practica_rapida" -> {
+                                HomeScreen(
+                                    store = store,
+                                    state = state,
+                                    ttsManager = ttsManager,
+                                    onNavigate = { currentRoute = it }
+                                )
+                                PracticaRapidaModal(
+                                    store = store,
+                                    ttsManager = ttsManager,
+                                    onDismiss = { currentRoute = "home" }
+                                )
+                            }
                             else -> HomeScreen(
                                 store = store,
                                 state = state,
                                 ttsManager = ttsManager,
                                 onNavigate = { currentRoute = it }
+                            )
+                        }
+
+                        if (showGlobalPracticaRapida) {
+                            PracticaRapidaModal(
+                                store = store,
+                                ttsManager = ttsManager,
+                                onDismiss = { showGlobalPracticaRapida = false }
                             )
                         }
 

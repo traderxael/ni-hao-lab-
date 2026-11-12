@@ -23,6 +23,7 @@ import com.example.data.AppState
 import com.example.data.StoreRepository
 import com.example.data.VocabData
 import com.example.ui.components.Streak30DaysSection
+import com.example.ui.components.WeeklyXpBarChart
 import com.example.ui.theme.AccentBlue
 import com.example.ui.theme.ErrorRed
 import com.example.ui.theme.GoldYellow
@@ -121,6 +122,11 @@ fun ProgresoScreen(
                         }
                     }
                 }
+            }
+
+            // Weekly XP Bar Chart (Last 7 Days)
+            item {
+                WeeklyXpBarChart(store = store, state = state)
             }
 
             // 30-Day Streak Consistency Section

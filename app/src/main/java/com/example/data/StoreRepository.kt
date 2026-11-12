@@ -51,7 +51,8 @@ data class AppState(
 
 class StoreRepository private constructor(context: Context) {
 
-    private val prefs: SharedPreferences = context.getSharedPreferences("nihao_lab_prefs", Context.MODE_PRIVATE)
+    private val appContext: Context = context.applicationContext
+    private val prefs: SharedPreferences = appContext.getSharedPreferences("nihao_lab_prefs", Context.MODE_PRIVATE)
 
     private val _state = MutableStateFlow(loadInitialState())
     val state: StateFlow<AppState> = _state.asStateFlow()
@@ -60,6 +61,7 @@ class StoreRepository private constructor(context: Context) {
     val toastEvents = MutableStateFlow<String?>(null)
     val confettiTrigger = MutableStateFlow(0)
     val streakCelebrationEvent = MutableStateFlow<StreakCelebrationData?>(null)
+    val caminoRevision = MutableStateFlow(0)
 
     val wordProgressMap = mutableMapOf<String, WordProgress>()
     val gameStatsMap = mutableMapOf<String, GameStats>()
@@ -68,6 +70,7 @@ class StoreRepository private constructor(context: Context) {
     var flashVistas: Int = 0
     val achievementsMap = mutableMapOf<String, String>()
     val caminoMap = mutableMapOf<String, UnitProgress>()
+    val claimedUnitChests = mutableSetOf<String>()
     val poemasLeidos = mutableSetOf<String>()
     val xpByDay = mutableMapOf<String, Int>()
     val itemsPurchased = mutableMapOf<String, Int>()
@@ -78,7 +81,18 @@ class StoreRepository private constructor(context: Context) {
         registrarVisita()
     }
 
+    private fun isSystemDarkTheme(): Boolean {
+        val nightModeFlags = appContext.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+        return nightModeFlags == android.content.res.Configuration.UI_MODE_NIGHT_YES
+    }
+
     private fun loadInitialState(): AppState {
+        val defaultDark = isSystemDarkTheme()
+        val storedDark = if (prefs.contains("isDarkTheme")) {
+            prefs.getBoolean("isDarkTheme", defaultDark)
+        } else {
+            defaultDark
+        }
         return AppState(
             xp = prefs.getInt("xp", 0),
             racha = prefs.getInt("racha", 0),
@@ -91,7 +105,7 @@ class StoreRepository private constructor(context: Context) {
             pistas = prefs.getInt("pistas", 0),
             corazonesExtra = prefs.getInt("corazonesExtra", 0),
             sonido = prefs.getBoolean("sonido", true),
-            isDarkTheme = prefs.getBoolean("isDarkTheme", false),
+            isDarkTheme = storedDark,
             filtroCat = prefs.getString("filtroCat", "todas") ?: "todas",
             filtroHsk = prefs.getInt("filtroHsk", 0),
             memPairs = prefs.getInt("memPairs", 8),
@@ -217,6 +231,17 @@ class StoreRepository private constructor(context: Context) {
             } catch (_: Exception) {}
         }
 
+        // Claimed Unit Chests
+        val chestsJson = prefs.getString("claimed_chests_json", null)
+        if (chestsJson != null) {
+            try {
+                val arr = JSONArray(chestsJson)
+                for (i in 0 until arr.length()) {
+                    claimedUnitChests.add(arr.getString(i))
+                }
+            } catch (_: Exception) {}
+        }
+
         // Streak Days
         val streakDaysJson = prefs.getString("streak_days_json", null)
         if (streakDaysJson != null) {
@@ -316,6 +341,11 @@ class StoreRepository private constructor(context: Context) {
         val itemsObj = JSONObject()
         for ((k, v) in itemsPurchased) itemsObj.put(k, v)
         editor.putString("items_json", itemsObj.toString())
+
+        // Claimed Unit Chests
+        val chestsArr = JSONArray()
+        for (cId in claimedUnitChests) chestsArr.put(cId)
+        editor.putString("claimed_chests_json", chestsArr.toString())
 
         // Streak Days
         val streakArr = JSONArray()
@@ -720,9 +750,24 @@ class StoreRepository private constructor(context: Context) {
             currentStars[level] = starsEarned
             up.stars = currentStars
         }
+        caminoRevision.value += 1
         saveAll()
         maybeAchv("leccion1")
         if (up.doneLevel >= 3) maybeAchv("unidad1")
+    }
+
+    fun claimUnitChest(unitId: String): Boolean {
+        if (claimedUnitChests.contains(unitId)) return false
+        val done = caminoMap[unitId]?.doneLevel ?: 0
+        if (done < 3) return false
+        claimedUnitChests.add(unitId)
+        caminoRevision.value += 1
+        addXP(25)
+        addCoins(15)
+        triggerConfetti()
+        saveAll()
+        toast("🎁 ¡Cofre de unidad abierto! +25 XP · +15 🪙")
+        return true
     }
 
     fun resetGame(game: String) {
@@ -753,6 +798,8 @@ class StoreRepository private constructor(context: Context) {
         flashVistas = 0
         achievementsMap.clear()
         caminoMap.clear()
+        claimedUnitChests.clear()
+        caminoRevision.value += 1
         poemasLeidos.clear()
         xpByDay.clear()
         itemsPurchased.clear()
